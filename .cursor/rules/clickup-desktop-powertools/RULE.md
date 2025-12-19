@@ -84,14 +84,38 @@ A Tool is a self-contained feature module.
 
 ## UI Strategy
 
-- **Primary surface**:  
-  A borderless, always-on-top overlay window positioned above the Windows taskbar.  
-  It displays compact UI blocks provided by tools.
+### Primary Surface
 
-- **Secondary surfaces** (optional and feature-driven):  
-  System tray icon, settings window, notifications, background-only tools.
+- A borderless, always-on-top overlay window
+- Visually integrated with the Windows taskbar
+- Displays compact UI blocks provided by tools
+
+The overlay defines the identity of the application.
+
+### Secondary Surfaces (feature-driven, optional)
+
+- System tray icon
+- Settings window
+- Notifications
+- Background-only tools
 
 Not every feature must render UI in the overlay.
+
+---
+
+## Overlay Positioning Constraints (Critical)
+
+These rules are **hard constraints**, not guidelines.
+
+- The overlay **must not reserve or consume usable screen space**.
+- The overlay **must not reduce the height or width available to other applications**.
+- Fullscreen and maximized windows must behave **exactly as if the overlay did not exist**.
+- The overlay must visually sit **on top of the Windows taskbar**, not above it.
+- Any implementation that causes fullscreen or maximized windows to be clipped is **invalid**.
+- The overlay is a **visual illusion**, not a layout participant.
+- The overlay must behave like part of the taskbar, even though it is technically not one.
+
+If these constraints are violated, the implementation is wrong, regardless of technical correctness.
 
 ---
 
