@@ -1,0 +1,19 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# build artifacts
+*.dll
+*.exe
+*.pdb
+
+# generated WPF files
+*.g.cs
+*.g.i.cs
+*.baml
+
+# OS junk
+.DS_Store
+Thumbs.db
