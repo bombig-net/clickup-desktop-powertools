@@ -1,0 +1,23 @@
+<Window x:Class="ClickUpDesktopPowerTools.UI.Overlay.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ClickUp PowerTools Overlay"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="Transparent"
+        AllowsTransparency="True"
+        SizeToContent="Width"
+        Height="40">
+    <Border Background="#F0F0F0" 
+            BorderBrush="#CCCCCC" 
+            BorderThickness="0,1,0,0"
+            CornerRadius="0">
+        <StackPanel x:Name="ToolContainer" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Left"
+                    Margin="8,0"/>
+    </Border>
+</Window>
+

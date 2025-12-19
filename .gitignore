@@ -1,0 +1,33 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Test results
+TestResults/
+
+# NuGet
+.nuget/packages/
+
+# Rider
+*.DotSettings.user
+
+# Cursor / AI local state (keep rules, ignore cache)
+.cursor/cache/
