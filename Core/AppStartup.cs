@@ -48,7 +48,7 @@ public class AppStartup
 
     public void Shutdown()
     {
-        _overlayHost?.Hide();
+        _overlayHost?.Shutdown();
         _logger.LogInformation("Application shutting down");
     }
 }

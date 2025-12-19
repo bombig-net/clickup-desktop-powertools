@@ -10,6 +10,11 @@ public partial class OverlayWindow : Window
         InitializeComponent();
     }
 
+    private void OnCloseClicked(object sender, RoutedEventArgs e)
+    {
+        Hide();
+    }
+
     public void AddToolControl(UIElement control)
     {
         ToolContainer.Children.Add(control);

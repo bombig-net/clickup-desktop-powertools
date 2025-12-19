@@ -13,12 +13,26 @@ public class OverlayHost
         WindowPositioning.DisplaySettingsChanged += OnDisplaySettingsChanged;
     }
 
+    private void EnsureWindowCreated()
+    {
+        if (_overlayWindow != null)
+        {
+            return;
+        }
+
+        _overlayWindow = new OverlayWindow();
+        Reposition();
+    }
+
     public void Show()
     {
-        if (_overlayWindow == null)
+        EnsureWindowCreated();
+
+        // Re-apply position on every show (display metrics can change while hidden).
+        Reposition();
+
+        if (_overlayWindow != null && !_overlayWindow.IsVisible)
         {
-            _overlayWindow = new OverlayWindow();
-            Reposition();
             _overlayWindow.Show();
         }
     }
@@ -31,6 +45,7 @@ public class OverlayHost
             _overlayWindow.Left = position.Left;
             _overlayWindow.Top = position.Top;
             _overlayWindow.Width = position.Width;
+            _overlayWindow.Height = position.Height;
         }
     }
 
@@ -44,8 +59,20 @@ public class OverlayHost
         _overlayWindow?.Hide();
     }
 
+    public void Shutdown()
+    {
+        WindowPositioning.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+
+        if (_overlayWindow != null)
+        {
+            _overlayWindow.Close();
+            _overlayWindow = null;
+        }
+    }
+
     public void RegisterToolControl(UIElement control)
     {
+        EnsureWindowCreated();
         _overlayWindow?.AddToolControl(control);
     }
 

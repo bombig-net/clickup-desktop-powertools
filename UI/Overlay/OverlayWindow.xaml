@@ -5,19 +5,45 @@
         WindowStyle="None"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
+        ShowActivated="False"
         Topmost="True"
         Background="Transparent"
         AllowsTransparency="True"
-        SizeToContent="Width"
         Height="40">
     <Border Background="#F0F0F0" 
             BorderBrush="#CCCCCC" 
             BorderThickness="0,1,0,0"
             CornerRadius="0">
-        <StackPanel x:Name="ToolContainer" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Left"
-                    Margin="8,0"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Margin="8,0,8,0"
+                       VerticalAlignment="Center"
+                       FontSize="11"
+                       Foreground="#5A5A5A"
+                       Text="PowerTools" />
+
+            <StackPanel x:Name="ToolContainer"
+                        Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Left"
+                        Margin="0,0"/>
+
+            <Button Grid.Column="2"
+                    Width="22"
+                    Height="22"
+                    Margin="0,0,6,0"
+                    VerticalAlignment="Center"
+                    Padding="0"
+                    Content="×"
+                    ToolTip="Hide overlay"
+                    Click="OnCloseClicked" />
+        </Grid>
     </Border>
 </Window>
 
