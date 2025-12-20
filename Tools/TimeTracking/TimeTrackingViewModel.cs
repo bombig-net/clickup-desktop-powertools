@@ -9,24 +9,27 @@ namespace ClickUpDesktopPowerTools.Tools.TimeTracking;
 public class TimeTrackingViewModel : INotifyPropertyChanged
 {
     private readonly TimeTrackingService _service;
-    private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _uiRefreshTimer;
     private string _currentTaskName = "No task";
     private string _elapsedTime = "00:00:00";
     private bool _isRunning = false;
+    private bool _isTeamIdConfigured = false;
+    private bool _hasError = false;
 
     public TimeTrackingViewModel(TimeTrackingService service)
     {
         _service = service;
         
-        _timer = new DispatcherTimer
+        _uiRefreshTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
-        _timer.Tick += Timer_Tick;
+        _uiRefreshTimer.Tick += UiRefreshTimer_Tick;
         
         StartStopCommand = new RelayCommand(ExecuteStartStop);
         
         UpdateFromService();
+        _uiRefreshTimer.Start();
     }
 
     public string CurrentTaskName
@@ -71,6 +74,32 @@ public class TimeTrackingViewModel : INotifyPropertyChanged
 
     public string StartStopButtonText => IsRunning ? "Stop" : "Start";
 
+    public bool IsTeamIdConfigured
+    {
+        get => _isTeamIdConfigured;
+        set
+        {
+            if (_isTeamIdConfigured != value)
+            {
+                _isTeamIdConfigured = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public bool HasError
+    {
+        get => _hasError;
+        set
+        {
+            if (_hasError != value)
+            {
+                _hasError = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public ICommand StartStopCommand { get; }
 
     private async void ExecuteStartStop()
@@ -96,7 +125,7 @@ public class TimeTrackingViewModel : INotifyPropertyChanged
         UpdateFromService();
     }
 
-    private void Timer_Tick(object? sender, EventArgs e)
+    private void UiRefreshTimer_Tick(object? sender, EventArgs e)
     {
         UpdateFromService();
     }
@@ -106,15 +135,8 @@ public class TimeTrackingViewModel : INotifyPropertyChanged
         CurrentTaskName = _service.CurrentTaskName;
         ElapsedTime = _service.GetCurrentElapsedTime().ToString(@"hh\:mm\:ss");
         IsRunning = _service.IsRunning;
-        
-        if (IsRunning && !_timer.IsEnabled)
-        {
-            _timer.Start();
-        }
-        else if (!IsRunning && _timer.IsEnabled)
-        {
-            _timer.Stop();
-        }
+        IsTeamIdConfigured = _service.IsTeamIdConfigured;
+        HasError = _service.HasError;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

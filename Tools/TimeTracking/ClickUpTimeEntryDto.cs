@@ -11,13 +11,13 @@ public class ClickUpTimeEntryDto
     public ClickUpTaskDto? Task { get; set; }
 
     [JsonPropertyName("start")]
-    public long Start { get; set; }
-
-    [JsonPropertyName("end")]
-    public long? End { get; set; }
+    public string? Start { get; set; }
 
     [JsonPropertyName("duration")]
-    public long Duration { get; set; }
+    public string? Duration { get; set; }
+
+    [JsonPropertyName("at")]
+    public string? At { get; set; }
 }
 
 public class ClickUpTaskDto
@@ -32,7 +32,7 @@ public class ClickUpTaskDto
 public class ClickUpTimeEntryResponseDto
 {
     [JsonPropertyName("data")]
-    public ClickUpTimeEntryDto[]? Data { get; set; }
+    public ClickUpTimeEntryDto? Data { get; set; }
 }
 
 public class ClickUpStartTimeEntryRequestDto

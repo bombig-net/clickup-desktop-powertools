@@ -1,8 +1,6 @@
 using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ClickUpDesktopPowerTools.Core;
@@ -22,43 +20,53 @@ public class ClickUpApi
         };
     }
 
-    private void SetAuthHeader()
+    private void SetAuthHeader(HttpRequestMessage request)
     {
         var token = _tokenProvider.GetToken();
         if (!string.IsNullOrEmpty(token))
         {
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Add("Authorization", token);
         }
     }
 
     public async Task<T?> GetAsync<T>(string endpoint)
     {
-        SetAuthHeader();
-        var response = await _httpClient.GetAsync(endpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+        SetAuthHeader(request);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<T>();
     }
 
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
     {
-        SetAuthHeader();
-        var response = await _httpClient.PostAsJsonAsync(endpoint, data);
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(data)
+        };
+        SetAuthHeader(request);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
 
     public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
     {
-        SetAuthHeader();
-        var response = await _httpClient.PutAsJsonAsync(endpoint, data);
+        using var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
+        {
+            Content = JsonContent.Create(data)
+        };
+        SetAuthHeader(request);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
 
     public async Task DeleteAsync(string endpoint)
     {
-        SetAuthHeader();
-        var response = await _httpClient.DeleteAsync(endpoint);
+        using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+        SetAuthHeader(request);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
 }

@@ -8,6 +8,7 @@ public class AppStartup
 {
     private readonly ILogger<AppStartup> _logger;
     private OverlayHost? _overlayHost;
+    private TimeTrackingService? _timeTrackingService;
 
     public AppStartup(ILogger<AppStartup> logger)
     {
@@ -24,16 +25,10 @@ public class AppStartup
         var tokenStorage = new TokenStorage();
         var clickUpApi = new ClickUpApi(tokenStorage);
         
-        // Create TimeTracking tool
-        var timeTrackingService = new TimeTrackingService(clickUpApi);
+        // Create TimeTracking tool (service loads team ID from settings and starts polling automatically)
+        _timeTrackingService = new TimeTrackingService(clickUpApi);
         
-        // Load current time entry asynchronously
-        _ = Task.Run(async () =>
-        {
-            await timeTrackingService.LoadCurrentTimeEntry();
-        });
-        
-        var timeTrackingViewModel = new TimeTrackingViewModel(timeTrackingService);
+        var timeTrackingViewModel = new TimeTrackingViewModel(_timeTrackingService);
         var timeTrackingView = new TimeTrackingView
         {
             DataContext = timeTrackingViewModel
@@ -48,6 +43,7 @@ public class AppStartup
 
     public void Shutdown()
     {
+        _timeTrackingService?.Dispose();
         _overlayHost?.Shutdown();
         _logger.LogInformation("Application shutting down");
     }
