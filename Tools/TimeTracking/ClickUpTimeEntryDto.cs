@@ -14,7 +14,7 @@ public class ClickUpTimeEntryDto
     public string? Start { get; set; }
 
     [JsonPropertyName("duration")]
-    public string? Duration { get; set; }
+    public long? Duration { get; set; }
 
     [JsonPropertyName("at")]
     public string? At { get; set; }

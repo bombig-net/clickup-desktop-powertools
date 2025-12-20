@@ -12,7 +12,7 @@ public class TimeTrackingService : IDisposable
     private readonly ClickUpApi _api;
     private readonly ILogger<TimeTrackingService> _logger;
     private readonly string? _teamId;
-    private DateTime? _startTime;
+    private DateTime _lastPollTime = DateTime.MinValue;
     private bool _isRunning = false;
     private string? _currentTimeEntryId;
     private string _currentTaskName = "No task";
@@ -113,8 +113,8 @@ public class TimeTrackingService : IDisposable
                     _isRunning = false;
                     _currentTimeEntryId = null;
                     _currentTaskName = "No task";
-                    _startTime = null;
                     _elapsedTime = TimeSpan.Zero;
+                    _lastPollTime = DateTime.MinValue;  // Prevents ghost ticking
                     _hasError = false;
                     
                     if (wasRunning)
@@ -128,11 +128,7 @@ public class TimeTrackingService : IDisposable
             var entry = response.Data;
             
             // Verified via manual API testing: duration < 0 means running, duration >= 0 means stopped
-            bool isRunning = false;
-            if (!string.IsNullOrEmpty(entry.Duration) && long.TryParse(entry.Duration, out var duration))
-            {
-                isRunning = duration < 0;
-            }
+            bool isRunning = entry.Duration.HasValue && entry.Duration.Value < 0;
 
             lock (_lockObject)
             {
@@ -145,17 +141,11 @@ public class TimeTrackingService : IDisposable
                 _isRunning = isRunning;
                 _hasError = false;
 
-                // Parse start time (string to UTC DateTime)
-                if (!string.IsNullOrEmpty(entry.Start) && long.TryParse(entry.Start, out var startMs))
+                if (isRunning && entry.Duration.HasValue)
                 {
-                    var startTimeUtc = DateTimeOffset.FromUnixTimeMilliseconds(startMs).UtcDateTime;
-                    _startTime = startTimeUtc;
-                    
-                    if (isRunning)
-                    {
-                        // Calculate elapsed time from start
-                        _elapsedTime = TimeSpan.Zero; // Will be calculated dynamically
-                    }
+                    // Hybrid: API duration (authoritative) + poll timestamp (for interpolation)
+                    _elapsedTime = TimeSpan.FromMilliseconds(Math.Abs(entry.Duration.Value));
+                    _lastPollTime = DateTime.UtcNow;
                 }
                 
                 // Log state changes
@@ -246,9 +236,9 @@ public class TimeTrackingService : IDisposable
                     {
                         _currentTimeEntryId = response.Data.Id;
                         _currentTaskName = response.Data.Task?.Name ?? "Unknown task";
-                        _startTime = DateTime.UtcNow;
                         _isRunning = true;
                         _elapsedTime = TimeSpan.Zero;
+                        _lastPollTime = DateTime.UtcNow;
                         _hasError = false;
                     }
                 }
@@ -272,14 +262,11 @@ public class TimeTrackingService : IDisposable
                 
                 lock (_lockObject)
                 {
-                    if (_startTime.HasValue)
-                    {
-                        _elapsedTime += DateTime.UtcNow - _startTime.Value;
-                    }
-                    _startTime = null;
                     _isRunning = false;
                     _currentTimeEntryId = null;
                     _currentTaskName = "No task";
+                    _elapsedTime = TimeSpan.Zero;
+                    _lastPollTime = DateTime.MinValue;
                     _hasError = false;
                 }
             }
@@ -289,12 +276,12 @@ public class TimeTrackingService : IDisposable
                 // API call failed, but update local state
                 lock (_lockObject)
                 {
-                    if (_startTime.HasValue)
-                    {
-                        _elapsedTime += DateTime.UtcNow - _startTime.Value;
-                    }
-                    _startTime = null;
                     _isRunning = false;
+                    _currentTimeEntryId = null;
+                    _currentTaskName = "No task";
+                    _elapsedTime = TimeSpan.Zero;
+                    _lastPollTime = DateTime.MinValue;
+                    _hasError = false;
                 }
             }
         }
@@ -304,9 +291,9 @@ public class TimeTrackingService : IDisposable
     {
         lock (_lockObject)
         {
-            if (_isRunning && _startTime.HasValue)
+            if (_isRunning && _lastPollTime != DateTime.MinValue)
             {
-                return _elapsedTime + (DateTime.UtcNow - _startTime.Value);
+                return _elapsedTime + (DateTime.UtcNow - _lastPollTime);
             }
             return _elapsedTime;
         }

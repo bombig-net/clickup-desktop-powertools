@@ -6,12 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace ClickUpDesktopPowerTools.Core;
 
+public enum ApiVersion { V2, V3 }
+
 public class ClickUpApi
 {
     private readonly HttpClient _httpClient;
     private readonly ITokenProvider _tokenProvider;
     private readonly ILogger<ClickUpApi> _logger;
-    private const string BaseUrl = "https://api.clickup.com/api/v2";
+    
+    private const string BaseUrl = "https://api.clickup.com/";
 
     public ClickUpApi(ITokenProvider tokenProvider, ILogger<ClickUpApi> logger)
     {
@@ -23,6 +26,36 @@ public class ClickUpApi
         };
     }
 
+    private static string GetVersionPath(ApiVersion version) => version switch
+    {
+        ApiVersion.V2 => "api/v2",
+        ApiVersion.V3 => "api/v3",
+        _ => throw new ArgumentOutOfRangeException(nameof(version))
+    };
+
+    private static bool IsAbsoluteUrl(string url)
+    {
+        return url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+               url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string BuildUrl(string endpoint, ApiVersion version)
+    {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            throw new ArgumentException("Endpoint cannot be null or empty.", nameof(endpoint));
+        }
+        
+        // Absolute URLs pass through unchanged
+        if (IsAbsoluteUrl(endpoint))
+        {
+            return endpoint;
+        }
+        
+        var path = endpoint.TrimStart('/');
+        return $"{GetVersionPath(version)}/{path}";
+    }
+
     private void SetAuthHeader(HttpRequestMessage request)
     {
         var token = _tokenProvider.GetToken();
@@ -32,145 +65,87 @@ public class ClickUpApi
         }
     }
 
-    public async Task<T?> GetAsync<T>(string endpoint)
+    public async Task<T?> GetAsync<T>(string endpoint, ApiVersion version = ApiVersion.V2)
     {
-        _logger.LogInformation("HTTP request: GET {Endpoint}", endpoint);
+        var url = BuildUrl(endpoint, version);
+        var isAbsolute = IsAbsoluteUrl(url);
         
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-            SetAuthHeader(request);
-            var response = await _httpClient.SendAsync(request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogInformation("HTTP success: GET {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            else
-            {
-                _logger.LogError("HTTP failure: GET {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<T>();
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "HTTP request failed: GET {Endpoint}", endpoint);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during HTTP request: GET {Endpoint}", endpoint);
-            throw;
-        }
+        _logger.LogDebug("GET {Url} (IsAbsolute: {IsAbsolute})", url, isAbsolute);
+        
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        SetAuthHeader(request);
+        
+        var response = await _httpClient.SendAsync(request);
+        LogResponse("GET", url, response);
+        response.EnsureSuccessStatusCode();
+        
+        return await response.Content.ReadFromJsonAsync<T>();
     }
 
-    public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
+    public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest data, ApiVersion version = ApiVersion.V2)
     {
-        _logger.LogInformation("HTTP request: POST {Endpoint}", endpoint);
+        var url = BuildUrl(endpoint, version);
+        var isAbsolute = IsAbsoluteUrl(url);
         
-        try
+        _logger.LogDebug("POST {Url} (IsAbsolute: {IsAbsolute})", url, isAbsolute);
+        
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
-            {
-                Content = JsonContent.Create(data)
-            };
-            SetAuthHeader(request);
-            var response = await _httpClient.SendAsync(request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogInformation("HTTP success: POST {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            else
-            {
-                _logger.LogError("HTTP failure: POST {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<TResponse>();
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "HTTP request failed: POST {Endpoint}", endpoint);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during HTTP request: POST {Endpoint}", endpoint);
-            throw;
-        }
+            Content = JsonContent.Create(data)
+        };
+        SetAuthHeader(request);
+        
+        var response = await _httpClient.SendAsync(request);
+        LogResponse("POST", url, response);
+        response.EnsureSuccessStatusCode();
+        
+        return await response.Content.ReadFromJsonAsync<TResponse>();
     }
 
-    public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
+    public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest data, ApiVersion version = ApiVersion.V2)
     {
-        _logger.LogInformation("HTTP request: PUT {Endpoint}", endpoint);
+        var url = BuildUrl(endpoint, version);
+        var isAbsolute = IsAbsoluteUrl(url);
         
-        try
+        _logger.LogDebug("PUT {Url} (IsAbsolute: {IsAbsolute})", url, isAbsolute);
+        
+        using var request = new HttpRequestMessage(HttpMethod.Put, url)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Put, endpoint)
-            {
-                Content = JsonContent.Create(data)
-            };
-            SetAuthHeader(request);
-            var response = await _httpClient.SendAsync(request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogInformation("HTTP success: PUT {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            else
-            {
-                _logger.LogError("HTTP failure: PUT {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<TResponse>();
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "HTTP request failed: PUT {Endpoint}", endpoint);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during HTTP request: PUT {Endpoint}", endpoint);
-            throw;
-        }
+            Content = JsonContent.Create(data)
+        };
+        SetAuthHeader(request);
+        
+        var response = await _httpClient.SendAsync(request);
+        LogResponse("PUT", url, response);
+        response.EnsureSuccessStatusCode();
+        
+        return await response.Content.ReadFromJsonAsync<TResponse>();
     }
 
-    public async Task DeleteAsync(string endpoint)
+    public async Task DeleteAsync(string endpoint, ApiVersion version = ApiVersion.V2)
     {
-        _logger.LogInformation("HTTP request: DELETE {Endpoint}", endpoint);
+        var url = BuildUrl(endpoint, version);
+        var isAbsolute = IsAbsoluteUrl(url);
         
-        try
+        _logger.LogDebug("DELETE {Url} (IsAbsolute: {IsAbsolute})", url, isAbsolute);
+        
+        using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        SetAuthHeader(request);
+        
+        var response = await _httpClient.SendAsync(request);
+        LogResponse("DELETE", url, response);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private void LogResponse(string method, string url, HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
-            SetAuthHeader(request);
-            var response = await _httpClient.SendAsync(request);
-            
-            if (response.IsSuccessStatusCode)
-            {
-                _logger.LogInformation("HTTP success: DELETE {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            else
-            {
-                _logger.LogError("HTTP failure: DELETE {Endpoint} {StatusCode}", endpoint, (int)response.StatusCode);
-            }
-            
-            response.EnsureSuccessStatusCode();
+            _logger.LogInformation("{Method} {Url} -> {StatusCode}", method, url, (int)response.StatusCode);
         }
-        catch (HttpRequestException ex)
+        else
         {
-            _logger.LogError(ex, "HTTP request failed: DELETE {Endpoint}", endpoint);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error during HTTP request: DELETE {Endpoint}", endpoint);
-            throw;
+            _logger.LogError("{Method} {Url} -> {StatusCode}", method, url, (int)response.StatusCode);
         }
     }
 }
-
