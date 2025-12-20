@@ -28,7 +28,7 @@ public class ClickUpApi
         var token = _tokenProvider.GetToken();
         if (!string.IsNullOrEmpty(token))
         {
-            request.Headers.Add("Authorization", token);
+            request.Headers.TryAddWithoutValidation("Authorization", token);
         }
     }
 

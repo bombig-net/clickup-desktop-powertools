@@ -66,7 +66,7 @@ public class TokenStorage : ITokenProvider
                 var passwordBytes = new byte[credential.CredentialBlobSize];
                 Marshal.Copy(credential.CredentialBlob, passwordBytes, 0, (int)credential.CredentialBlobSize);
                 CredFree(credentialPtr);
-                return Encoding.UTF8.GetString(passwordBytes);
+                return Encoding.Unicode.GetString(passwordBytes).TrimEnd('\0').Trim();
             }
             return null;
         }
@@ -83,7 +83,7 @@ public class TokenStorage : ITokenProvider
             // Delete existing credential if it exists
             CredDelete(TargetName, CRED_TYPE_GENERIC, 0);
 
-            var bytes = Encoding.UTF8.GetBytes(token);
+            var bytes = Encoding.Unicode.GetBytes(token);
             var credential = new NativeCredential
             {
                 AttributeCount = 0,
