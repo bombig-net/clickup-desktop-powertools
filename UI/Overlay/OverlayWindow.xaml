@@ -11,10 +11,9 @@
         AllowsTransparency="True"
         PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
         PreviewMouseMove="OnPreviewMouseMove"
-        PreviewMouseLeftButtonUp="OnPreviewMouseLeftButtonUp"
-        Height="40">
+        PreviewMouseLeftButtonUp="OnPreviewMouseLeftButtonUp">
     <Border x:Name="ContentRoot"
-            Height="40"
+            MinHeight="40"
             Background="#F0F0F0" 
             BorderBrush="#CCCCCC" 
             BorderThickness="0,1,0,0"

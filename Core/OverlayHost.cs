@@ -37,7 +37,6 @@ public class OverlayHost
 
         _overlayWindow = new OverlayWindow();
         _overlayWindow.RawMouse = OnOverlayRawMouse;
-        Reposition();
     }
 
     public void Show()
