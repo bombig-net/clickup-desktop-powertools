@@ -112,6 +112,37 @@ public class WindowPositioning
         return value;
     }
 
+    public static bool TryGetTaskbarRectDip(out Rect taskbarRectDip, out bool isHorizontalTaskbar)
+    {
+        taskbarRectDip = Rect.Empty;
+        isHorizontalTaskbar = true;
+
+        IntPtr taskbarHandle = FindWindow("Shell_TrayWnd", null);
+        if (taskbarHandle == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (!GetWindowRect(taskbarHandle, out RECT taskbarRect))
+        {
+            return false;
+        }
+
+        var dpi = GetDpiForWindow(taskbarHandle);
+
+        var taskbarWidthPx = taskbarRect.Right - taskbarRect.Left;
+        var taskbarHeightPx = taskbarRect.Bottom - taskbarRect.Top;
+        isHorizontalTaskbar = taskbarWidthPx >= taskbarHeightPx;
+
+        var leftDip = PxToDip(taskbarRect.Left, dpi);
+        var topDip = PxToDip(taskbarRect.Top, dpi);
+        var widthDip = PxToDip(taskbarWidthPx, dpi);
+        var heightDip = PxToDip(taskbarHeightPx, dpi);
+
+        taskbarRectDip = new Rect(leftDip, topDip, widthDip, heightDip);
+        return !taskbarRectDip.IsEmpty;
+    }
+
     public static Rect GetOverlayPosition(Size overlayDesiredSizeDip, OverlayPlacementSettings placementSettings)
     {
         if (overlayDesiredSizeDip.Width <= 0 || overlayDesiredSizeDip.Height <= 0)

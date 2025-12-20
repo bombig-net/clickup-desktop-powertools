@@ -9,6 +9,9 @@
         Topmost="True"
         Background="Transparent"
         AllowsTransparency="True"
+        PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown"
+        PreviewMouseMove="OnPreviewMouseMove"
+        PreviewMouseLeftButtonUp="OnPreviewMouseLeftButtonUp"
         Height="40">
     <Border x:Name="ContentRoot"
             Height="40"
