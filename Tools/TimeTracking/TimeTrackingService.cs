@@ -3,12 +3,14 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using ClickUpDesktopPowerTools.Core;
+using Microsoft.Extensions.Logging;
 
 namespace ClickUpDesktopPowerTools.Tools.TimeTracking;
 
 public class TimeTrackingService : IDisposable
 {
     private readonly ClickUpApi _api;
+    private readonly ILogger<TimeTrackingService> _logger;
     private readonly string? _teamId;
     private DateTime? _startTime;
     private bool _isRunning = false;
@@ -20,14 +22,20 @@ public class TimeTrackingService : IDisposable
     private readonly object _lockObject = new object();
     private readonly SemaphoreSlim _pollingSemaphore = new SemaphoreSlim(1, 1);
 
-    public TimeTrackingService(ClickUpApi api)
+    public TimeTrackingService(ClickUpApi api, ILogger<TimeTrackingService> logger)
     {
         _api = api;
+        _logger = logger;
         _teamId = TimeTrackingSettings.Load().TeamId;
         
         if (_teamId != null)
         {
+            _logger.LogInformation("Team ID loaded: {TeamId}", _teamId);
             StartPolling();
+        }
+        else
+        {
+            _logger.LogInformation("Team ID not configured");
         }
     }
 
@@ -52,6 +60,8 @@ public class TimeTrackingService : IDisposable
             null,
             TimeSpan.Zero,
             TimeSpan.FromSeconds(10));
+        
+        _logger.LogInformation("Polling timer started, interval: 10s");
     }
 
     private async Task PollTimerAsync()
@@ -65,12 +75,14 @@ public class TimeTrackingService : IDisposable
 
         try
         {
+            _logger.LogDebug("Polling timer tick");
             await LoadCurrentTimeEntry();
         }
-        catch
+        catch (Exception ex)
         {
             // Exceptions in async Timer callbacks are swallowed by thread pool
             // Preserve error state by setting _hasError (done in LoadCurrentTimeEntry)
+            _logger.LogError(ex, "Polling exception in timer callback");
         }
         finally
         {
@@ -97,12 +109,18 @@ public class TimeTrackingService : IDisposable
             {
                 lock (_lockObject)
                 {
+                    var wasRunning = _isRunning;
                     _isRunning = false;
                     _currentTimeEntryId = null;
                     _currentTaskName = "No task";
                     _startTime = null;
                     _elapsedTime = TimeSpan.Zero;
                     _hasError = false;
+                    
+                    if (wasRunning)
+                    {
+                        _logger.LogInformation("Timer state changed: running -> stopped");
+                    }
                 }
                 return;
             }
@@ -118,6 +136,10 @@ public class TimeTrackingService : IDisposable
 
             lock (_lockObject)
             {
+                var oldTaskName = _currentTaskName;
+                var wasRunning = _isRunning;
+                var hadError = _hasError;
+                
                 _currentTimeEntryId = entry.Id;
                 _currentTaskName = entry.Task?.Name ?? "Unknown task";
                 _isRunning = isRunning;
@@ -135,33 +157,69 @@ public class TimeTrackingService : IDisposable
                         _elapsedTime = TimeSpan.Zero; // Will be calculated dynamically
                     }
                 }
+                
+                // Log state changes
+                if (oldTaskName != _currentTaskName)
+                {
+                    _logger.LogInformation("Task name changed: \"{OldTaskName}\" -> \"{NewTaskName}\"", oldTaskName, _currentTaskName);
+                }
+                
+                if (wasRunning != _isRunning)
+                {
+                    _logger.LogInformation("Timer state changed: {OldState} -> {NewState}", 
+                        wasRunning ? "running" : "stopped", 
+                        _isRunning ? "running" : "stopped");
+                }
+                
+                if (hadError && !_hasError)
+                {
+                    _logger.LogInformation("Error state cleared");
+                }
             }
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
             // Handle HTTP errors - preserve state on all errors
             // 404/401/403 indicate configuration/API errors, but we preserve state
             // Network errors also preserve state (user might have timer running)
+            _logger.LogError(ex, "API call failed: GET /team/{TeamId}/time_entries/current", _teamId);
             lock (_lockObject)
             {
+                var hadError = _hasError;
                 _hasError = true;
+                if (!hadError)
+                {
+                    _logger.LogInformation("Error state set");
+                }
                 // Don't reset to "no timer" - preserve current state
             }
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException ex)
         {
             // Timeout - preserve state
+            _logger.LogError(ex, "API call timeout: GET /team/{TeamId}/time_entries/current", _teamId);
             lock (_lockObject)
             {
+                var hadError = _hasError;
                 _hasError = true;
+                if (!hadError)
+                {
+                    _logger.LogInformation("Error state set");
+                }
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Other errors - preserve state
+            _logger.LogError(ex, "Unexpected error in LoadCurrentTimeEntry");
             lock (_lockObject)
             {
+                var hadError = _hasError;
                 _hasError = true;
+                if (!hadError)
+                {
+                    _logger.LogInformation("Error state set");
+                }
             }
         }
     }
@@ -195,9 +253,9 @@ public class TimeTrackingService : IDisposable
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // API call failed
+                _logger.LogError(ex, "API call failed: POST /time_entries (Start timer)");
             }
         }
     }
@@ -225,8 +283,9 @@ public class TimeTrackingService : IDisposable
                     _hasError = false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "API call failed: PUT /time_entries/{TimeEntryId} (Stop timer)", _currentTimeEntryId);
                 // API call failed, but update local state
                 lock (_lockObject)
                 {

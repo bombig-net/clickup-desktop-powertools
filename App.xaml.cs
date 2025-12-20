@@ -10,27 +10,27 @@ namespace ClickUpDesktopPowerTools;
 public partial class App : Application
 {
     private AppStartup? _appStartup;
+    private ILoggerFactory? _loggerFactory;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         // Initialize logging
-        using var loggerFactory = LoggerFactory.Create(builder =>
+        _loggerFactory = LoggerFactory.Create(builder =>
         {
-            builder.AddConsole();
+            builder.AddProvider(new SimpleFileLoggerProvider());
         });
 
-        var logger = loggerFactory.CreateLogger<AppStartup>();
-
         // Initialize application
-        _appStartup = new AppStartup(logger);
+        _appStartup = new AppStartup(_loggerFactory);
         _appStartup.Initialize();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _appStartup?.Shutdown();
+        _loggerFactory?.Dispose();
         base.OnExit(e);
     }
 }

@@ -7,12 +7,14 @@ namespace ClickUpDesktopPowerTools.Core;
 public class AppStartup
 {
     private readonly ILogger<AppStartup> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private OverlayHost? _overlayHost;
     private TimeTrackingService? _timeTrackingService;
 
-    public AppStartup(ILogger<AppStartup> logger)
+    public AppStartup(ILoggerFactory loggerFactory)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<AppStartup>();
     }
 
     public void Initialize()
@@ -23,10 +25,12 @@ public class AppStartup
         
         // Create token storage and API
         var tokenStorage = new TokenStorage();
-        var clickUpApi = new ClickUpApi(tokenStorage);
+        var apiLogger = _loggerFactory.CreateLogger<ClickUpApi>();
+        var clickUpApi = new ClickUpApi(tokenStorage, apiLogger);
         
         // Create TimeTracking tool (service loads team ID from settings and starts polling automatically)
-        _timeTrackingService = new TimeTrackingService(clickUpApi);
+        var timeTrackingLogger = _loggerFactory.CreateLogger<TimeTrackingService>();
+        _timeTrackingService = new TimeTrackingService(clickUpApi, timeTrackingLogger);
         
         var timeTrackingViewModel = new TimeTrackingViewModel(_timeTrackingService);
         var timeTrackingView = new TimeTrackingView
