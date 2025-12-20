@@ -10,7 +10,9 @@
         Background="Transparent"
         AllowsTransparency="True"
         Height="40">
-    <Border Background="#F0F0F0" 
+    <Border x:Name="ContentRoot"
+            Height="40"
+            Background="#F0F0F0" 
             BorderBrush="#CCCCCC" 
             BorderThickness="0,1,0,0"
             CornerRadius="0">

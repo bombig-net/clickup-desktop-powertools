@@ -10,6 +10,11 @@ public partial class OverlayWindow : Window
         InitializeComponent();
     }
 
+    public FrameworkElement GetContentRoot()
+    {
+        return ContentRoot;
+    }
+
     private void OnCloseClicked(object sender, RoutedEventArgs e)
     {
         Hide();

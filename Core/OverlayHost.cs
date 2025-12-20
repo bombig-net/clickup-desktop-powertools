@@ -7,9 +7,16 @@ namespace ClickUpDesktopPowerTools.Core;
 public class OverlayHost
 {
     private OverlayWindow? _overlayWindow;
+    private readonly Func<OverlayPlacementSettings> _getPlacementSettings;
 
     public OverlayHost()
+        : this(() => new OverlayPlacementSettings())
     {
+    }
+
+    public OverlayHost(Func<OverlayPlacementSettings> getPlacementSettings)
+    {
+        _getPlacementSettings = getPlacementSettings;
         WindowPositioning.DisplaySettingsChanged += OnDisplaySettingsChanged;
     }
 
@@ -41,7 +48,11 @@ public class OverlayHost
     {
         if (_overlayWindow != null)
         {
-            var position = WindowPositioning.GetOverlayPosition();
+            var contentRoot = _overlayWindow.GetContentRoot();
+            contentRoot.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            var desiredSizeDip = contentRoot.DesiredSize;
+
+            var position = WindowPositioning.GetOverlayPosition(desiredSizeDip, _getPlacementSettings());
             _overlayWindow.Left = position.Left;
             _overlayWindow.Top = position.Top;
             _overlayWindow.Width = position.Width;
@@ -74,6 +85,7 @@ public class OverlayHost
     {
         EnsureWindowCreated();
         _overlayWindow?.AddToolControl(control);
+        Reposition();
     }
 
     public void UnregisterToolControl(UIElement control)
@@ -82,6 +94,7 @@ public class OverlayHost
         if (_overlayWindow != null)
         {
             _overlayWindow.ClearToolControls();
+            Reposition();
         }
     }
 }

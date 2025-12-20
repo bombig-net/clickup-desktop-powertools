@@ -15,6 +15,13 @@ public class WindowPositioning
         {
             DisplaySettingsChanged?.Invoke(null, EventArgs.Empty);
         };
+
+        // Taskbar geometry can change without a display mode change (auto-hide, move edge,
+        // DPI/theme-related shell adjustments). Treat these as reposition triggers too.
+        SystemEvents.UserPreferenceChanged += (sender, e) =>
+        {
+            DisplaySettingsChanged?.Invoke(null, EventArgs.Empty);
+        };
     }
 
     [DllImport("user32.dll")]
@@ -81,21 +88,45 @@ public class WindowPositioning
         return pixels * 96.0 / dpi;
     }
 
-    private static double Clamp(double value, double min, double max)
+    private static int DipToPx(double dips, uint dpi)
     {
-        if (value < min) return min;
-        if (value > max) return max;
+        if (dpi == 0)
+        {
+            dpi = 96;
+        }
+
+        return (int)Math.Round(dips * dpi / 96.0);
+    }
+
+    private static int Clamp(int value, int min, int max)
+    {
+        if (value < min)
+        {
+            return min;
+        }
+        if (value > max)
+        {
+            return max;
+        }
+
         return value;
     }
 
-    public static Rect GetOverlayPosition()
+    public static Rect GetOverlayPosition(Size overlayDesiredSizeDip, OverlayPlacementSettings placementSettings)
     {
+        if (overlayDesiredSizeDip.Width <= 0 || overlayDesiredSizeDip.Height <= 0)
+        {
+            return Rect.Empty;
+        }
+
         // Get taskbar window
         IntPtr taskbarHandle = FindWindow("Shell_TrayWnd", null);
         if (taskbarHandle == IntPtr.Zero)
         {
-            // Fallback: use work area
-            return GetPositionFromWorkArea();
+            // If the taskbar cannot be located, we cannot safely position the overlay
+            // without risking consuming usable screen space (fullscreen/maximized clipping).
+            // Return an empty rect so the overlay effectively does not render.
+            return Rect.Empty;
         }
 
         // Get taskbar rectangle
@@ -103,130 +134,107 @@ public class WindowPositioning
         {
             var dpi = GetDpiForWindow(taskbarHandle);
 
-            var taskbarLeft = PxToDip(taskbarRect.Left, dpi);
-            var taskbarTop = PxToDip(taskbarRect.Top, dpi);
-            var taskbarRight = PxToDip(taskbarRect.Right, dpi);
-            var taskbarBottom = PxToDip(taskbarRect.Bottom, dpi);
-
-            var virtualLeftPx = GetSystemMetrics(SM_XVIRTUALSCREEN);
-            var virtualTopPx = GetSystemMetrics(SM_YVIRTUALSCREEN);
-            var virtualWidthPx = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-            var virtualHeightPx = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-
-            var virtualLeft = PxToDip(virtualLeftPx, dpi);
-            var virtualTop = PxToDip(virtualTopPx, dpi);
-            var virtualWidth = PxToDip(virtualWidthPx, dpi);
-            var virtualHeight = PxToDip(virtualHeightPx, dpi);
-            var virtualRight = virtualLeft + virtualWidth;
-            var virtualBottom = virtualTop + virtualHeight;
-
-            // Try to use the monitor containing the taskbar for sizing.
-            var taskbarPointPx = new POINT
-            {
-                X = taskbarRect.Left + 1,
-                Y = taskbarRect.Top + 1
-            };
+            // Determine which monitor the taskbar is on (for top vs bottom detection).
+            var taskbarPointPx = new POINT { X = taskbarRect.Left + 1, Y = taskbarRect.Top + 1 };
             var monitorHandle = MonitorFromPoint(taskbarPointPx, MONITOR_DEFAULTTOPRIMARY);
             var monitorInfo = new MONITORINFO { Size = Marshal.SizeOf<MONITORINFO>() };
+            var haveMonitorInfo = monitorHandle != IntPtr.Zero && GetMonitorInfo(monitorHandle, ref monitorInfo);
 
-            double monitorLeft = virtualLeft;
-            double monitorTop = virtualTop;
-            double monitorRight = virtualRight;
-            double monitorBottom = virtualBottom;
+            var taskbarWidthPx = taskbarRect.Right - taskbarRect.Left;
+            var taskbarHeightPx = taskbarRect.Bottom - taskbarRect.Top;
+            var isHorizontalTaskbar = taskbarWidthPx >= taskbarHeightPx;
 
-            if (monitorHandle != IntPtr.Zero && GetMonitorInfo(monitorHandle, ref monitorInfo))
+            var desiredOverlayWidthPx = Math.Max(1, DipToPx(overlayDesiredSizeDip.Width, dpi));
+            var desiredOverlayHeightPx = Math.Max(1, DipToPx(overlayDesiredSizeDip.Height, dpi));
+
+            // Size clamping rules:
+            // - Horizontal taskbar: width <= taskbarWidth, height <= taskbarHeight
+            // - Vertical taskbar: width <= taskbarWidth (thickness), height <= taskbarHeight
+            var overlayWidthPx = Math.Min(desiredOverlayWidthPx, taskbarWidthPx);
+            var overlayHeightPx = Math.Min(desiredOverlayHeightPx, taskbarHeightPx);
+
+            var offsetPx = DipToPx(placementSettings.OverlayOffset, dpi);
+
+            var overlayLeftPx = 0;
+            var overlayTopPx = 0;
+
+            if (isHorizontalTaskbar)
             {
-                monitorLeft = PxToDip(monitorInfo.Monitor.Left, dpi);
-                monitorTop = PxToDip(monitorInfo.Monitor.Top, dpi);
-                monitorRight = PxToDip(monitorInfo.Monitor.Right, dpi);
-                monitorBottom = PxToDip(monitorInfo.Monitor.Bottom, dpi);
-            }
-
-            double overlayX = 0;
-            double overlayY = 0;
-            double overlayHeight = 40; // Default height
-
-            var taskbarWidth = taskbarRight - taskbarLeft;
-            var taskbarHeight = taskbarBottom - taskbarTop;
-            var monitorWidth = monitorRight - monitorLeft;
-
-            // Horizontal taskbar (top/bottom): span the monitor width.
-            if (taskbarWidth >= taskbarHeight)
-            {
-                overlayX = monitorLeft;
-                var overlayWidth = monitorWidth;
-
-                // Bottom if the taskbar is in the lower half of its monitor.
-                var monitorMidY = monitorTop + ((monitorBottom - monitorTop) / 2.0);
-                if (taskbarTop > monitorMidY)
+                int xCandidatePx;
+                switch (placementSettings.OverlayDock)
                 {
-                    overlayY = taskbarTop - overlayHeight;
+                    case OverlayDock.Left:
+                        xCandidatePx = taskbarRect.Left + offsetPx;
+                        break;
+                    case OverlayDock.Center:
+                        xCandidatePx = taskbarRect.Left + ((taskbarWidthPx - overlayWidthPx) / 2) + offsetPx;
+                        break;
+                    case OverlayDock.Right:
+                        xCandidatePx = taskbarRect.Right - overlayWidthPx - offsetPx;
+                        break;
+                    default:
+                        xCandidatePx = taskbarRect.Right - overlayWidthPx - offsetPx;
+                        break;
                 }
-                else
+
+                var isBottomTaskbar = true;
+                if (haveMonitorInfo)
                 {
-                    // Taskbar at top
-                    overlayY = taskbarBottom;
+                    var monitorMidYpx = monitorInfo.Monitor.Top + ((monitorInfo.Monitor.Bottom - monitorInfo.Monitor.Top) / 2);
+                    isBottomTaskbar = taskbarRect.Top > monitorMidYpx;
                 }
 
-                // Clamp to virtual screen bounds.
-                overlayWidth = Math.Min(overlayWidth, virtualWidth);
-                overlayX = Clamp(overlayX, virtualLeft, virtualRight - overlayWidth);
-                overlayY = Clamp(overlayY, virtualTop, virtualBottom - overlayHeight);
+                var yCandidatePx = isBottomTaskbar
+                    ? taskbarRect.Bottom - overlayHeightPx
+                    : taskbarRect.Top;
 
-                return new Rect(overlayX, overlayY, overlayWidth, overlayHeight);
-            }
-
-            // Vertical taskbar (left/right): keep overlay in the content area at the bottom.
-            // This keeps behavior predictable without implementing advanced shell edge cases.
-            if (taskbarLeft > (monitorLeft + (monitorWidth / 2.0)))
-            {
-                // Taskbar at right
-                overlayX = monitorLeft;
-                var overlayWidth = taskbarLeft - monitorLeft;
-                overlayY = monitorBottom - overlayHeight;
-
-                overlayWidth = Math.Min(overlayWidth, virtualWidth);
-                overlayX = Clamp(overlayX, virtualLeft, virtualRight - overlayWidth);
-                overlayY = Clamp(overlayY, virtualTop, virtualBottom - overlayHeight);
-
-                return new Rect(overlayX, overlayY, overlayWidth, overlayHeight);
+                overlayLeftPx = Clamp(xCandidatePx, taskbarRect.Left, taskbarRect.Right - overlayWidthPx);
+                overlayTopPx = Clamp(yCandidatePx, taskbarRect.Top, taskbarRect.Bottom - overlayHeightPx);
             }
             else
             {
-                // Taskbar at left
-                overlayX = taskbarRight;
-                var overlayWidth = monitorRight - taskbarRight;
-                overlayY = monitorBottom - overlayHeight;
+                // Vertical taskbar (left/right): dock maps Left|Center|Right to Top|Center|Bottom (intentional).
+                int yCandidatePx;
+                switch (placementSettings.OverlayDock)
+                {
+                    case OverlayDock.Left:
+                        yCandidatePx = taskbarRect.Top + offsetPx;
+                        break;
+                    case OverlayDock.Center:
+                        yCandidatePx = taskbarRect.Top + ((taskbarHeightPx - overlayHeightPx) / 2) + offsetPx;
+                        break;
+                    case OverlayDock.Right:
+                        yCandidatePx = taskbarRect.Bottom - overlayHeightPx - offsetPx;
+                        break;
+                    default:
+                        yCandidatePx = taskbarRect.Bottom - overlayHeightPx - offsetPx;
+                        break;
+                }
 
-                overlayWidth = Math.Min(overlayWidth, virtualWidth);
-                overlayX = Clamp(overlayX, virtualLeft, virtualRight - overlayWidth);
-                overlayY = Clamp(overlayY, virtualTop, virtualBottom - overlayHeight);
+                var isRightTaskbar = false;
+                if (haveMonitorInfo)
+                {
+                    var monitorMidXpx = monitorInfo.Monitor.Left + ((monitorInfo.Monitor.Right - monitorInfo.Monitor.Left) / 2);
+                    isRightTaskbar = taskbarRect.Left > monitorMidXpx;
+                }
 
-                return new Rect(overlayX, overlayY, overlayWidth, overlayHeight);
+                var xCandidatePx = isRightTaskbar
+                    ? taskbarRect.Right - overlayWidthPx
+                    : taskbarRect.Left;
+
+                overlayLeftPx = Clamp(xCandidatePx, taskbarRect.Left, taskbarRect.Right - overlayWidthPx);
+                overlayTopPx = Clamp(yCandidatePx, taskbarRect.Top, taskbarRect.Bottom - overlayHeightPx);
             }
 
-            // Unreachable.
+            return new Rect(
+                PxToDip(overlayLeftPx, dpi),
+                PxToDip(overlayTopPx, dpi),
+                PxToDip(overlayWidthPx, dpi),
+                PxToDip(overlayHeightPx, dpi));
         }
 
-        return GetPositionFromWorkArea();
-    }
-
-    private static Rect GetPositionFromWorkArea()
-    {
-        // Conservative fallback: place at bottom of the virtual screen.
-        var virtualLeftPx = GetSystemMetrics(SM_XVIRTUALSCREEN);
-        var virtualTopPx = GetSystemMetrics(SM_YVIRTUALSCREEN);
-        var virtualWidthPx = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-        var virtualHeightPx = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-
-        const double overlayHeight = 40;
-        const uint dpi = 96;
-        var virtualLeft = PxToDip(virtualLeftPx, dpi);
-        var virtualTop = PxToDip(virtualTopPx, dpi);
-        var virtualWidth = PxToDip(virtualWidthPx, dpi);
-        var virtualHeight = PxToDip(virtualHeightPx, dpi);
-
-        return new Rect(virtualLeft, virtualTop + (virtualHeight - overlayHeight), virtualWidth, overlayHeight);
+        // If the taskbar rect cannot be read, do not guess.
+        return Rect.Empty;
     }
 }
 
