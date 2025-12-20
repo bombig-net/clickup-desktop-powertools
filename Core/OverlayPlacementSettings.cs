@@ -1,7 +1,4 @@
 using System;
-using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ClickUpDesktopPowerTools.Core;
 
@@ -19,75 +16,20 @@ public sealed class OverlayPlacementSettings
 
     public static OverlayPlacementSettings Load()
     {
-        var path = GetSettingsFilePath();
+        var settings = SettingsManager.Load<OverlayPlacementSettings>("OverlayPlacement");
 
-        if (!File.Exists(path))
+        // Validate OverlayDock enum value
+        if (!Enum.IsDefined(typeof(OverlayDock), settings.OverlayDock))
         {
-            var defaults = new OverlayPlacementSettings();
-            TrySaveToPath(defaults, path);
-            return defaults;
+            settings.OverlayDock = OverlayDock.Right;
         }
 
-        try
-        {
-            var json = File.ReadAllText(path);
-            var settings = JsonSerializer.Deserialize<OverlayPlacementSettings>(json, GetJsonOptions());
-            if (settings == null)
-            {
-                return new OverlayPlacementSettings();
-            }
-
-            if (!Enum.IsDefined(typeof(OverlayDock), settings.OverlayDock))
-            {
-                settings.OverlayDock = OverlayDock.Right;
-            }
-
-            return settings;
-        }
-        catch
-        {
-            return new OverlayPlacementSettings();
-        }
+        return settings;
     }
 
     public void Save()
     {
-        TrySaveToPath(this, GetSettingsFilePath());
-    }
-
-    private static void TrySaveToPath(OverlayPlacementSettings settings, string path)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-
-            var json = JsonSerializer.Serialize(settings, GetJsonOptions());
-            File.WriteAllText(path, json);
-        }
-        catch
-        {
-            // Persistence should never prevent app startup.
-        }
-    }
-
-    private static string GetSettingsFilePath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Combine(appData, "ClickUpDesktopPowerTools", "settings.json");
-    }
-
-    private static JsonSerializerOptions GetJsonOptions()
-    {
-        return new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter() }
-        };
+        SettingsManager.Save("OverlayPlacement", this);
     }
 }
 
