@@ -144,6 +144,9 @@ If these constraints are violated, the implementation is wrong, regardless of te
 
 4. **If fewer than two tools need it, it does not belong in Core**
 
+5. **Reuse existing infrastructure first**  
+   If infrastructure (e.g. configuration persistence, storage, lifecycle handling) already exists in the codebase, it must be reused before introducing alternative mechanisms (e.g. environment variables, hardcoded values, ad-hoc helpers). Introducing parallel solutions for the same concern is not allowed.
+
 ---
 
 ## Change Discipline (Critical)
