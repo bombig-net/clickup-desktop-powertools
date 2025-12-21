@@ -115,6 +115,18 @@ These rules are **hard constraints**, not guidelines.
 - The overlay is a **visual illusion**, not a layout participant.
 - The overlay must behave like part of the taskbar, even though it is technically not one.
 
+### Idle Overlay Height Constraint (Hard Rule)
+
+- In its idle state, the overlay **must not extend beyond the visual bounds of the Windows taskbar**.
+- Persistent overlay UI must fit entirely within the taskbar height on the current system.
+- UI that exceeds the taskbar height is only allowed during **explicit user interaction**, such as:
+  - Context menus
+  - Flyouts
+  - Hover-driven popups
+  - Drag interactions
+- Any UI that overlaps the work area must be **transient** and disappear when the interaction ends.
+- A permanently taller overlay that overlaps the work area is **invalid**, even if no system APIs are affected.
+
 If these constraints are violated, the implementation is wrong, regardless of technical correctness.
 
 ---
