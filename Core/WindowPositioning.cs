@@ -208,16 +208,8 @@ public class WindowPositioning
                         break;
                 }
 
-                var isBottomTaskbar = true;
-                if (haveMonitorInfo)
-                {
-                    var monitorMidYpx = monitorInfo.Monitor.Top + ((monitorInfo.Monitor.Bottom - monitorInfo.Monitor.Top) / 2);
-                    isBottomTaskbar = taskbarRect.Top > monitorMidYpx;
-                }
-
-                var yCandidatePx = isBottomTaskbar
-                    ? taskbarRect.Bottom - overlayHeightPx
-                    : taskbarRect.Top;
+                // Center overlay vertically within taskbar
+                var yCandidatePx = taskbarRect.Top + ((taskbarHeightPx - overlayHeightPx) / 2);
 
                 overlayLeftPx = Clamp(xCandidatePx, taskbarRect.Left, taskbarRect.Right - overlayWidthPx);
                 overlayTopPx = Clamp(yCandidatePx, taskbarRect.Top, taskbarRect.Bottom - overlayHeightPx);

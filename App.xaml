@@ -3,7 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ClickUpDesktopPowerTools">
     <Application.Resources>
-         
+        <!-- Dark theme overlay brushes -->
+        <SolidColorBrush x:Key="OverlayBackground" Color="#80363636"/>
+        <SolidColorBrush x:Key="OverlayBorder" Color="#E6363636"/>
+        <SolidColorBrush x:Key="OverlayForeground" Color="#E5E5E5"/>
+        <SolidColorBrush x:Key="AccentRed" Color="#D21E24"/>
     </Application.Resources>
 </Application>
-

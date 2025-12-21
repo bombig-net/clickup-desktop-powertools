@@ -123,9 +123,19 @@ public partial class OverlayWindow : Window
         return ContentRoot;
     }
 
-    private void OnCloseClicked(object sender, RoutedEventArgs e)
+    private void OnHideClicked(object sender, RoutedEventArgs e)
     {
         Hide();
+    }
+
+    private void OnExitClicked(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
+    }
+
+    private void OnSettingsClicked(object sender, RoutedEventArgs e)
+    {
+        // Placeholder - no-op for now
     }
 
     public void AddToolControl(UIElement control)
