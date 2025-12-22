@@ -1,99 +1,57 @@
 # ClickUp Desktop PowerTools
 
-An unofficial, experimental Windows desktop application for internal ClickUp power-user utilities.  
-Built for daily use at bombig.net.
+ClickUp Desktop PowerTools is a native Windows companion for the ClickUp Desktop app.
+
+It provides a central core that connects the running ClickUp Desktop app with the Windows system environment, and a growing set of focused tools built on top of that core.
+
+PowerTools is experimental and intended for power users. Behavior and APIs may change.
 
 ---
 
-## Purpose
+## The Core
 
-ClickUp Desktop PowerTools is a lightweight WPF (.NET 8) desktop companion for ClickUp.
+The PowerTools Core is responsible for all ClickUp-related communication and state.
 
-It exists to experiment with fast, low-friction desktop utilities that complement ClickUp without replacing it.
+It integrates with:
+- the ClickUp Desktop runtime (for live UI state, customization, and interaction)
+- the ClickUp API (as a complementary data source where needed)
+- the Windows system (idle state, focus, hotkeys, lifecycle)
 
-This project is **not user-facing**, **not polished**, and **not stable**.  
-It is a working codebase for building and validating ideas.
+The Core runs independently of any specific tool UI and exposes a shared ClickUp-centric state.
 
----
-
-## Concept
-
-The application provides:
-
-- A small, always-on-top overlay window positioned above the Windows taskbar
-- A simple platform that hosts independent tools
-- Shared infrastructure for ClickUp API access and system integration
-
-The application itself is just the platform.  
-All real functionality lives in tools.
-
----
-
-## Core Capabilities
-
-The core platform is responsible for:
-
-- Creating and positioning the overlay window
-- Hosting compact UI blocks provided by tools
-- Providing shared access to the ClickUp API
-- Securely storing a ClickUp API token via Windows Credential Manager
-- Enforcing a strict, rule-driven architecture
-
-The core does **not** contain feature logic.
+A dedicated PowerTools window acts as the control center for the Core.  
+From there, users configure runtime setup, manage tools, and adjust settings.  
+When not in use, this window lives in the system tray.
 
 ---
 
 ## Tools
 
-### Time Tracking
+Tools are small, focused features built on top of the Core.
 
-A tool focused on working with the currently active ClickUp time entry.
+Each tool uses the Core’s ClickUp and system integration, but owns its own logic and UI.
 
-Current focus:
-- Reading the active time entry
-- Displaying task name and elapsed time
-- Stopping a running time entry
+### Included tools
 
-This tool exists primarily to validate the overlay concept and overall architecture.
+**Time Tracking**
+- Shows the currently tracked task and elapsed time
+- Provides a small desktop overlay for quick visibility
+- Enables safe interaction with the running ClickUp timer
 
----
+**Custom CSS and JavaScript**
+- Apply custom CSS to the ClickUp Desktop UI
+- Run small scripts to adjust or simplify the interface
+- Managed centrally via the PowerTools window
 
-## Scope and Status
+### Potential future tools
 
-This repository is in an early, exploratory phase.
-
-- APIs may change
-- Features may break or disappear
-- Documentation favors intent over completeness
-
-Architecture rules are authoritative.  
-Documentation exists to orient contributors, not users.
+- Custom hotkeys for ClickUp actions
+- System-triggered behavior (for example based on idle or focus state)
+- Additional desktop widgets and panels
 
 ---
 
-## Requirements
+## Philosophy
 
-- Windows 10 or 11
-- .NET 8 SDK
-- A personal ClickUp API token
-
----
-
-## Build and Run
-
-From the repository root:
-
-```bash
-dotnet build
-dotnet run
-```
-
-## Notes
-
-This project is intentionally architecture-driven.
-
-Before making changes, read the authoritative development rules:
-
-`.cursor/rules/clickup-desktop-powertools/RULE.md`
-
-Those rules define what is allowed, what is forbidden, and how this codebase is expected to evolve.
+PowerTools does not replace ClickUp.  
+It augments the ClickUp Desktop experience by reducing friction, surfacing relevant state, and connecting ClickUp more deeply with the Windows desktop.
