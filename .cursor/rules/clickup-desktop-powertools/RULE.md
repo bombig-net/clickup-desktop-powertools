@@ -7,7 +7,7 @@ alwaysApply: true
 These rules define how this project must be structured and how changes are allowed to happen.  
 They are authoritative. If something is not explicitly allowed here, it must not be done.
 
-This file exists to prevent architectural drift, feature leakage into Core, and incorrect assumptions by humans or AI.
+This file exists to prevent overengineering, architectural drift, and incorrect assumptions by humans or AI.
 
 ---
 
@@ -17,27 +17,27 @@ This file exists to prevent architectural drift, feature leakage into Core, and 
    The application has exactly one Core module and multiple independent Tools.
 
 2. **Tools do not depend on each other**  
-   A Tool must never reference another Tool’s code, types, state, or UI.
+   A tool must never reference another tool’s code, types, or state.
 
 3. **Core is platform-level, not feature-level**  
-   Core provides raw ClickUp and system integration capabilities.  
-   Core exposes what is possible, not what a feature intends to do.
+   Core contains ClickUp- and system-level infrastructure and shared state.  
+   Feature-specific business logic belongs in Tools, not in Core.
 
 4. **No dynamic plugin loading**  
-   All Tools are compiled into the application.  
+   All tools are compiled into the application.  
    There is no runtime plugin system.
 
 5. **No framework-style abstractions**  
-   Do not introduce base classes, marker interfaces, generic frameworks, or extensibility layers for hypothetical future use.  
-   Prefer explicit, concrete implementations.
+   Do not introduce base classes, marker interfaces, or generic frameworks for “future extensibility”.  
+   Prefer explicit, concrete code.
 
 ---
 
 ## Dependency Direction
 
-- Tools may depend on Core
-- Core must not depend on Tools
-- All UI binds only to ViewModels
+- **Tools may depend on Core**
+- **Core must not depend on Tools**
+- **All UI binds only to ViewModels**
 - Views must not reference Core components or Services directly
 
 This applies to all UI layers, including Core UI and Tool UIs.
@@ -50,26 +50,28 @@ The Core is the authoritative ClickUp and system integration layer.
 
 Core may contain:
 - ClickUp Desktop runtime communication
-- ClickUp API access (single shared service)
+- ClickUp API access (single, shared service)
 - Shared ClickUp-centric state and lifecycle management
 - Application lifecycle management
-- System integration (tray, focus, idle state, hotkeys)
+- System integration (idle state, focus, hotkeys)
 - Secure token storage
 
-Core may additionally contain platform-level infrastructure if required:
+Core may additionally contain the following if required at platform level:
 - Configuration persistence
 - Logging
+- System tray integration
 - Autostart handling
 
 Core must never contain:
-- Feature intent or workflows
-- Tool-specific business logic
+- Tool-specific feature logic
+- Tool-specific business rules
 - Tool-specific UI components
-- Feature configuration logic
+- Interpretation of tool configuration
 - Speculative abstractions
 
-Whether one or many Tools use a capability is irrelevant.  
-What matters is whether the capability represents **platform-level integration**.
+**Important clarification:**  
+Core may store, render, and pass through tool configuration,  
+but must not interpret, validate, or act on tool-specific configuration semantics.
 
 ---
 
@@ -78,15 +80,17 @@ What matters is whether the capability represents **platform-level integration**
 A Tool is a self-contained feature module built on top of the Core.
 
 ### A Tool may:
-- Consume state and capabilities exposed by Core
-- Provide its own UI surfaces
+- Consume ClickUp runtime or API state exposed by the Core
+- Receive its configuration data from Core
+- Provide optional UI surfaces (overlay widgets, panels, windows)
 - Run background logic
 - Trigger notifications
 
 ### A Tool must:
 - Own its own logic and state
+- Own the meaning and interpretation of its configuration
 - Be removable without breaking the application
-- Not depend on other Tools
+- Not depend on other tools
 - Not leak feature logic into Core
 
 ---
@@ -96,16 +100,20 @@ A Tool is a self-contained feature module built on top of the Core.
 ### Core UI (Mandatory)
 
 - A dedicated PowerTools control window
-- Used to configure and control Core behavior
-- Manages runtime setup, global settings, and Tool activation
-- Lives in the system tray when not in active use
+- Used to configure and control the Core and manage tools
+- Hosts tool activation and tool configuration surfaces
+- Lives in the system tray when not actively used
 
-The Core UI exposes **platform-level state only**.
+The Core UI may:
+- Enable or disable tools
+- Render tool configuration controls
+- Persist tool configuration
+- Pass configuration data to tools
 
-It must not contain:
-- Tool-specific configuration
-- Feature behavior controls
-- Detailed feature UIs
+The Core UI must not:
+- Implement tool behavior
+- Contain tool-specific business logic
+- Make assumptions about what tool configuration means
 
 ### Tool UIs (Optional)
 
@@ -115,29 +123,24 @@ Tools may provide their own UI surfaces, such as:
 - Panels
 - Background-only tools with no UI
 
-Tool UIs must be strictly limited to their feature scope.
+Tool UIs are optional and feature-driven.  
+A tool is not required to have its own UI.
 
 ---
 
-## UI Technology Constraint (Hard Rule)
+## UI Technology Constraint (Mandatory)
 
-The primary Core control window is implemented as a **WebUI**.
-
-- Rendering is currently done via WebView2
-- This is an implementation detail of the UI layer
-- Core must not depend on WebView2 APIs or Web concepts
-
-System-bound UI surfaces such as overlays or widgets may be implemented natively using WPF where required.
-
-Core must remain UI-technology agnostic.
+- The primary Core control and configuration UI is implemented as a **Web UI rendered via WebView2**
+- Native UI (WPF) is used only where tight system integration is required (e.g. overlays)
+- Core logic must remain UI-technology-agnostic
 
 ---
 
 ## ClickUp Integration Rules
 
-- ClickUp Desktop runtime integration is first-class
+- ClickUp Desktop runtime communication is first-class
 - Runtime integration is preferred for UI-related state and interaction
-- ClickUp API access is complementary or a fallback
+- ClickUp API access is complementary or used as fallback
 - Exactly one ClickUp API service exists in Core
 - Raw HTTP access only
 - No feature-specific methods in the API layer
@@ -154,7 +157,7 @@ Core must remain UI-technology agnostic.
    Clear folders and explicit wiring beat clever patterns.
 
 2. **Explicit over clever**  
-   Code must be obvious and readable.
+   Code must be readable and obvious.
 
 3. **Features drive architecture**  
    Architecture exists to support real features, not hypothetical ones.
@@ -162,8 +165,8 @@ Core must remain UI-technology agnostic.
 4. **Platform logic belongs in Core, feature logic does not**
 
 5. **Reuse existing infrastructure first**  
-   If infrastructure already exists, it must be reused.  
-   Parallel solutions for the same concern are not allowed.
+   If infrastructure already exists in the codebase, it must be reused.  
+   Introducing parallel solutions for the same concern is not allowed.
 
 ---
 
@@ -175,7 +178,7 @@ Core must remain UI-technology agnostic.
 - Do not introduce new abstractions to “clean things up”
 - Do not change behavior unless explicitly requested
 
-If something looks imperfect but respects the rules, leave it alone.
+If something looks imperfect but works and respects the rules, leave it alone.
 
 ---
 
@@ -184,15 +187,15 @@ If something looks imperfect but respects the rules, leave it alone.
 Do NOT build:
 - Plugin frameworks
 - Dynamic plugin loading
-- Abstraction layers for future tools
+- Abstraction layers for hypothetical future tools
 - Event buses or mediator patterns
 - OAuth flows
 - Enterprise-style configuration systems
 
 Do NOT put in Core:
 - Feature-specific business logic
-- Tool-specific UI components
-- Feature configuration logic
+- Tool-specific behavior
+- Tool-specific interpretation of configuration
 - Speculative abstractions
 
 ---
@@ -203,7 +206,6 @@ This project is:
 - A ClickUp-centric desktop companion
 - Modular and intentionally simple
 - Power-user focused and experimental
-- Optimized for speed and low friction
 
 This project is NOT:
 - A real Windows taskbar extension
