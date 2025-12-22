@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 
 namespace ClickUpDesktopPowerTools.UI.Control;
 
@@ -28,6 +29,15 @@ public partial class ControlWindow : Window
 
         try
         {
+            // Set UserDataFolder before initialization to avoid default location issues
+            WebView.CreationProperties = new CoreWebView2CreationProperties
+            {
+                UserDataFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ClickUpDesktopPowerTools",
+                    "WebView2Data")
+            };
+
             await WebView.EnsureCoreWebView2Async();
 
             // Get the wwwroot folder path (relative to executable)
