@@ -19,8 +19,8 @@ This file exists to prevent overengineering, architectural drift, and incorrect 
 2. **Tools do not depend on each other**  
    A tool must never reference another tool’s code, types, or state.
 
-3. **Core contains only shared infrastructure**  
-   Core provides infrastructure that is needed by multiple tools.  
+3. **Core is platform-level, not feature-level**  
+   Core contains ClickUp- and system-level infrastructure and shared state.  
    Feature-specific business logic belongs in Tools, not in Core.
 
 4. **No dynamic plugin loading**  
@@ -37,42 +37,50 @@ This file exists to prevent overengineering, architectural drift, and incorrect 
 
 - **Tools may depend on Core**
 - **Core must not depend on Tools**
-- **UI binds only to ViewModels**
-- Views must not reference Services or Core components directly.
+- **All UI binds only to ViewModels**
+- Views must not reference Core components or Services directly
+
+This applies to all UI layers, including core UI and tool UIs.
 
 ---
 
 ## Core Responsibilities (Strictly Limited)
 
-Core may contain infrastructure that is demonstrably shared by multiple tools, such as:
+The Core is the authoritative ClickUp and system integration layer.
 
-- Application lifecycle management
-- Overlay window creation and positioning
-- Hosting and layout of tool UI blocks
+Core may contain:
+- ClickUp Desktop runtime communication (UI state, interaction, customization)
 - ClickUp API access (single, shared service)
+- Shared ClickUp-centric state and lifecycle management
+- Application lifecycle management
+- System integration (idle state, focus, hotkeys)
 - Secure token storage
 
-Core may only contain the following **if multiple tools require them**:
+Core may additionally contain the following if required at platform level:
 - Configuration persistence
 - Logging
 - System tray integration
 - Autostart handling
 
-Core must never contain feature-specific business logic.
+Core must never contain:
+- Tool-specific feature logic
+- Tool-specific UI components
+- Speculative abstractions
 
-If logic is only used by one tool, it does not belong in Core.
+The number of tools using a Core capability is not a criterion.  
+What matters is whether the capability represents platform-level ClickUp or system integration.
 
 ---
 
 ## Tool Model
 
-A Tool is a self-contained feature module.
+A Tool is a self-contained feature module built on top of the Core.
 
 ### A Tool may:
-- Contribute a UI block to the overlay
+- Consume ClickUp runtime or API state exposed by the Core
+- Provide optional UI surfaces (overlay widgets, panels, windows)
 - Run background logic
 - Trigger notifications
-- Use Core infrastructure services
 
 ### A Tool must:
 - Own its own logic and state
@@ -84,56 +92,29 @@ A Tool is a self-contained feature module.
 
 ## UI Strategy
 
-### Primary Surface
+### Core UI (Mandatory)
 
-- A borderless, always-on-top overlay window
-- Visually integrated with the Windows taskbar
-- Displays compact UI blocks provided by tools
+- A dedicated PowerTools window used to configure and control the Core
+- Manages runtime setup, tool activation, and global settings
+- Lives in the system tray when not actively used
 
-The overlay defines the identity of the application.
+### Tool UIs (Optional)
 
-### Secondary Surfaces (feature-driven, optional)
+- Overlays
+- Widgets
+- Panels
+- Background-only tools with no UI
 
-- System tray icon
-- Settings window
-- Notifications
-- Background-only tools
-
-Not every feature must render UI in the overlay.
-
----
-
-## Overlay Positioning Constraints (Critical)
-
-These rules are **hard constraints**, not guidelines.
-
-- The overlay **must not reserve or consume usable screen space**.
-- The overlay **must not reduce the height or width available to other applications**.
-- Fullscreen and maximized windows must behave **exactly as if the overlay did not exist**.
-- The overlay must visually sit **on top of the Windows taskbar**, not above it.
-- Any implementation that causes fullscreen or maximized windows to be clipped is **invalid**.
-- The overlay is a **visual illusion**, not a layout participant.
-- The overlay must behave like part of the taskbar, even though it is technically not one.
-
-### Idle Overlay Height Constraint (Hard Rule)
-
-- In its idle state, the overlay **must not extend beyond the visual bounds of the Windows taskbar**.
-- Persistent overlay UI must fit entirely within the taskbar height on the current system.
-- UI that exceeds the taskbar height is only allowed during **explicit user interaction**, such as:
-  - Context menus
-  - Flyouts
-  - Hover-driven popups
-  - Drag interactions
-- Any UI that overlaps the work area must be **transient** and disappear when the interaction ends.
-- A permanently taller overlay that overlaps the work area is **invalid**, even if no system APIs are affected.
-
-If these constraints are violated, the implementation is wrong, regardless of technical correctness.
+Tool UIs consume Core state and may be enabled or disabled independently.
 
 ---
 
 ## ClickUp Integration Rules
 
-- Exactly one ClickUp API service in Core
+- ClickUp Desktop runtime communication is a first-class integration
+- Runtime integration is preferred for UI-related state and interaction
+- ClickUp API access is complementary or used as a fallback where needed
+- Exactly one ClickUp API service exists in Core
 - Raw HTTP access only
 - No feature-specific methods in the API layer
 - No business interpretation inside the API service
@@ -154,20 +135,21 @@ If these constraints are violated, the implementation is wrong, regardless of te
 3. **Features drive architecture**  
    Architecture exists to support real features, not hypothetical ones.
 
-4. **If fewer than two tools need it, it does not belong in Core**
+4. **Platform logic belongs in Core, feature logic does not**
 
 5. **Reuse existing infrastructure first**  
-   If infrastructure (e.g. configuration persistence, storage, lifecycle handling) already exists in the codebase, it must be reused before introducing alternative mechanisms (e.g. environment variables, hardcoded values, ad-hoc helpers). Introducing parallel solutions for the same concern is not allowed.
+   If infrastructure already exists in the codebase, it must be reused.  
+   Introducing parallel solutions for the same concern is not allowed.
 
 ---
 
 ## Change Discipline (Critical)
 
-- Do not refactor existing code unless explicitly instructed.
-- Do not rename files, folders, or classes “for clarity”.
-- Do not move code between Core and Tools without explicit direction.
-- Do not introduce new abstractions to “clean things up”.
-- Do not change behavior unless explicitly requested.
+- Do not refactor existing code unless explicitly instructed
+- Do not rename files, folders, or classes “for clarity”
+- Do not move code between Core and Tools without explicit direction
+- Do not introduce new abstractions to “clean things up”
+- Do not change behavior unless explicitly requested
 
 If something looks imperfect but works and respects the rules, leave it alone.
 
@@ -185,7 +167,6 @@ Do NOT build:
 
 Do NOT put in Core:
 - Feature-specific business logic
-- Code used by only one tool
 - Tool-specific UI components
 - Speculative abstractions
 
@@ -194,9 +175,9 @@ Do NOT put in Core:
 ## Project Boundaries
 
 This project is:
-- A collection of desktop power tools for ClickUp
+- A ClickUp-centric desktop companion
 - Modular and intentionally simple
-- Internal and open-source friendly
+- Power-user focused and experimental
 - Optimized for speed, visibility, and low friction
 
 This project is NOT:
