@@ -1,7 +1,8 @@
 <Application x:Class="ClickUpDesktopPowerTools.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ClickUpDesktopPowerTools">
+             xmlns:local="clr-namespace:ClickUpDesktopPowerTools"
+             ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <!-- Dark theme overlay brushes -->
         <SolidColorBrush x:Key="OverlayBackground" Color="#80363636"/>
