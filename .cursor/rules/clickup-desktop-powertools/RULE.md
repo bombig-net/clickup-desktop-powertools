@@ -106,6 +106,19 @@ A Tool is a self-contained feature module built on top of the Core.
 - Background-only tools with no UI
 
 Tool UIs consume Core state and may be enabled or disabled independently.
+Tool UIs must be limited to their specific feature scope and must not
+duplicate Core UI responsibilities.
+
+### UI Technology Constraint (Mandatory)
+
+Primary control and configuration UI is implemented as a WebUI rendered
+via WebView2.
+
+System-bound UI surfaces such as overlays and widgets are implemented
+natively using WPF where required.
+
+The Core must not depend on any specific UI technology.
+
 
 ---
 
