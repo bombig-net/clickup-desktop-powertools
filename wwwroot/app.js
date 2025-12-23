@@ -1,0 +1,360 @@
+// Core <-> WebUI Message Bridge
+(function() {
+    'use strict';
+
+    // Message handlers registry
+    const handlers = {};
+
+    // Current state
+    let state = {
+        version: '',
+        dotNetVersion: '',
+        webView2Version: '',
+        logFilePath: '',
+        uptime: '',
+        clickUpDesktopStatus: '',
+        hasApiToken: false,
+        tokenValid: null,
+        tools: []
+    };
+
+    // Register a handler for a message type
+    function onMessage(type, handler) {
+        if (!handlers[type]) {
+            handlers[type] = [];
+        }
+        handlers[type].push(handler);
+    }
+
+    // Send a message to Core
+    function sendMessage(type, payload) {
+        if (window.chrome && window.chrome.webview) {
+            const message = { type, payload: payload || {} };
+            window.chrome.webview.postMessage(message);
+        } else {
+            console.warn('WebView2 bridge not available');
+        }
+    }
+
+    // Handle incoming messages from Core
+    function handleMessage(event) {
+        try {
+            const message = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            const type = message.type;
+            const payload = message.payload;
+
+            if (handlers[type]) {
+                handlers[type].forEach(handler => {
+                    try {
+                        handler(payload);
+                    } catch (err) {
+                        console.error('Handler error for', type, err);
+                    }
+                });
+            }
+        } catch (err) {
+            console.error('Failed to handle message:', err);
+        }
+    }
+
+    // Initialize the bridge
+    function init() {
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.addEventListener('message', handleMessage);
+        }
+
+        // Register core message handlers
+        onMessage('state-changed', handleStateChanged);
+        onMessage('test-result', handleTestResult);
+
+        // Request initial state
+        sendMessage('get-state');
+    }
+
+    // Handle state updates from Core
+    function handleStateChanged(payload) {
+        state = payload;
+        updateUI();
+    }
+
+    // Handle API token test result
+    function handleTestResult(payload) {
+        const statusEl = document.getElementById('token-status');
+        const testBtn = document.getElementById('test-btn');
+        
+        if (testBtn) {
+            testBtn.disabled = false;
+            testBtn.textContent = 'Test Connection';
+        }
+
+        if (payload.success) {
+            if (statusEl) {
+                statusEl.textContent = 'Valid';
+                statusEl.className = 'status-value status-valid';
+            }
+        } else {
+            if (statusEl) {
+                statusEl.textContent = 'Invalid';
+                statusEl.className = 'status-value status-invalid';
+            }
+            // Show error briefly
+            const errorEl = document.getElementById('token-error');
+            if (errorEl && payload.error) {
+                errorEl.textContent = payload.error;
+                errorEl.style.display = 'block';
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+    }
+
+    // Update UI based on current state
+    function updateUI() {
+        // Version and diagnostics
+        const versionEl = document.getElementById('version');
+        if (versionEl) {
+            versionEl.textContent = state.version || '1.0.0';
+        }
+
+        const dotNetEl = document.getElementById('dotnet-version');
+        if (dotNetEl) {
+            dotNetEl.textContent = state.dotNetVersion || '-';
+        }
+
+        const webView2El = document.getElementById('webview2-version');
+        if (webView2El) {
+            webView2El.textContent = state.webView2Version || '-';
+        }
+
+        const clickUpStatusEl = document.getElementById('clickup-desktop-status');
+        if (clickUpStatusEl) {
+            const status = state.clickUpDesktopStatus;
+            clickUpStatusEl.textContent = status || '-';
+            clickUpStatusEl.className = 'status-value';
+            if (status === 'Running') {
+                clickUpStatusEl.classList.add('status-valid');
+            } else if (status === 'NotRunning') {
+                clickUpStatusEl.classList.add('status-none');
+            }
+        }
+
+        const uptimeEl = document.getElementById('uptime');
+        if (uptimeEl) {
+            uptimeEl.textContent = state.uptime || '-';
+        }
+
+        const logPathEl = document.getElementById('log-path');
+        if (logPathEl) {
+            logPathEl.textContent = state.logFilePath || '-';
+            logPathEl.title = state.logFilePath || '';
+        }
+
+        // Update tools list
+        updateToolsList();
+
+        // Token status
+        const statusEl = document.getElementById('token-status');
+        if (statusEl) {
+            if (!state.hasApiToken) {
+                statusEl.textContent = 'Not configured';
+                statusEl.className = 'status-value status-none';
+            } else if (state.tokenValid === null) {
+                statusEl.textContent = 'Configured (untested)';
+                statusEl.className = 'status-value status-untested';
+            } else if (state.tokenValid === true) {
+                statusEl.textContent = 'Valid';
+                statusEl.className = 'status-value status-valid';
+            } else {
+                statusEl.textContent = 'Invalid';
+                statusEl.className = 'status-value status-invalid';
+            }
+        }
+
+        // Token input - show masked value if token exists
+        const tokenInput = document.getElementById('token-input');
+        if (tokenInput) {
+            if (state.hasApiToken && !tokenInput.dataset.userEditing) {
+                tokenInput.placeholder = '••••••••••••••••';
+                tokenInput.value = '';
+            } else if (!state.hasApiToken) {
+                tokenInput.placeholder = 'Enter your ClickUp API token';
+            }
+        }
+
+        // Button states
+        const saveBtn = document.getElementById('save-btn');
+        const testBtn = document.getElementById('test-btn');
+        const clearBtn = document.getElementById('clear-btn');
+
+        if (saveBtn) {
+            // Save is enabled if there's text in the input
+            const hasInput = tokenInput && tokenInput.value.trim().length > 0;
+            saveBtn.disabled = !hasInput;
+        }
+
+        if (testBtn) {
+            testBtn.disabled = !state.hasApiToken;
+        }
+
+        if (clearBtn) {
+            clearBtn.disabled = !state.hasApiToken;
+        }
+    }
+
+    // Event handlers for UI actions
+    function handleSaveToken() {
+        const tokenInput = document.getElementById('token-input');
+        if (tokenInput && tokenInput.value.trim()) {
+            sendMessage('set-api-token', { token: tokenInput.value.trim() });
+            tokenInput.value = '';
+            tokenInput.dataset.userEditing = '';
+        }
+    }
+
+    function handleTestToken() {
+        const testBtn = document.getElementById('test-btn');
+        if (testBtn) {
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing...';
+        }
+        sendMessage('test-api-token');
+    }
+
+    function handleClearToken() {
+        if (confirm('Are you sure you want to remove the API token?')) {
+            sendMessage('clear-api-token');
+        }
+    }
+
+    function handleTokenInput() {
+        const tokenInput = document.getElementById('token-input');
+        if (tokenInput) {
+            tokenInput.dataset.userEditing = tokenInput.value.length > 0 ? 'true' : '';
+        }
+        updateUI();
+    }
+
+    function handleOpenLogFolder() {
+        sendMessage('open-log-folder');
+    }
+
+    function handleRefreshRuntimeStatus() {
+        sendMessage('refresh-runtime-status');
+    }
+
+    function handleToolToggle(toolId, enabled) {
+        sendMessage('set-tool-enabled', { toolId, enabled });
+    }
+
+    // Update tools list UI
+    function updateToolsList() {
+        const toolsList = document.getElementById('tools-list');
+        if (!toolsList) return;
+
+        // Clear existing
+        toolsList.innerHTML = '';
+
+        if (!state.tools || state.tools.length === 0) {
+            toolsList.innerHTML = '<p class="help-text">No tools available.</p>';
+            return;
+        }
+
+        state.tools.forEach(tool => {
+            const toolRow = document.createElement('div');
+            toolRow.className = 'tool-row';
+
+            const toolInfo = document.createElement('div');
+            toolInfo.className = 'tool-info';
+
+            const toolName = document.createElement('span');
+            toolName.className = 'tool-name';
+            toolName.textContent = tool.name;
+
+            const toolDesc = document.createElement('span');
+            toolDesc.className = 'tool-description';
+            toolDesc.textContent = tool.description;
+
+            toolInfo.appendChild(toolName);
+            toolInfo.appendChild(toolDesc);
+
+            const toggle = document.createElement('label');
+            toggle.className = 'toggle';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = tool.enabled;
+            checkbox.addEventListener('change', () => {
+                handleToolToggle(tool.id, checkbox.checked);
+            });
+
+            const slider = document.createElement('span');
+            slider.className = 'toggle-slider';
+
+            toggle.appendChild(checkbox);
+            toggle.appendChild(slider);
+
+            toolRow.appendChild(toolInfo);
+            toolRow.appendChild(toggle);
+            toolsList.appendChild(toolRow);
+        });
+    }
+
+    // Setup UI event listeners
+    function setupEventListeners() {
+        const saveBtn = document.getElementById('save-btn');
+        const testBtn = document.getElementById('test-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const tokenInput = document.getElementById('token-input');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', handleSaveToken);
+        }
+
+        if (testBtn) {
+            testBtn.addEventListener('click', handleTestToken);
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', handleClearToken);
+        }
+
+        if (tokenInput) {
+            tokenInput.addEventListener('input', handleTokenInput);
+            tokenInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleSaveToken();
+                }
+            });
+        }
+
+        const openLogsBtn = document.getElementById('open-logs-btn');
+        if (openLogsBtn) {
+            openLogsBtn.addEventListener('click', handleOpenLogFolder);
+        }
+
+        const refreshRuntimeBtn = document.getElementById('refresh-runtime-btn');
+        if (refreshRuntimeBtn) {
+            refreshRuntimeBtn.addEventListener('click', handleRefreshRuntimeStatus);
+        }
+    }
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            init();
+        });
+    } else {
+        setupEventListeners();
+        init();
+    }
+
+    // Expose for debugging
+    window.PowerTools = {
+        sendMessage,
+        onMessage,
+        getState: () => state
+    };
+})();
+

@@ -8,6 +8,26 @@
         WindowStartupLocation="CenterScreen">
     <Grid>
         <wv2:WebView2 x:Name="WebView" />
+        
+        <!-- Error overlay shown when WebView2 crashes -->
+        <Border x:Name="ErrorOverlay" 
+                Visibility="Collapsed" 
+                Background="#1a1a2e">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="⚠️" 
+                           FontSize="48" 
+                           HorizontalAlignment="Center" 
+                           Foreground="#e5e5e5"
+                           Margin="0,0,0,20"/>
+                <TextBlock x:Name="ErrorMessage" 
+                           Text="An error occurred." 
+                           FontSize="16" 
+                           Foreground="#e5e5e5" 
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="400"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
 

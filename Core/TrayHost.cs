@@ -1,15 +1,31 @@
 using System;
 using System.Windows;
 using H.NotifyIcon;
+using Microsoft.Extensions.Logging;
 using ClickUpDesktopPowerTools.UI.Control;
 
 namespace ClickUpDesktopPowerTools.Core;
 
 public class TrayHost : IDisposable
 {
+    private readonly TokenStorage _tokenStorage;
+    private readonly ClickUpApi _clickUpApi;
+    private readonly CoreState _coreState;
+    private readonly ClickUpRuntime _clickUpRuntime;
+    private readonly ILoggerFactory _loggerFactory;
+
     private TaskbarIcon? _taskbarIcon;
     private ControlWindow? _controlWindow;
     private bool _disposed;
+
+    public TrayHost(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, ILoggerFactory loggerFactory)
+    {
+        _tokenStorage = tokenStorage;
+        _clickUpApi = clickUpApi;
+        _coreState = coreState;
+        _clickUpRuntime = clickUpRuntime;
+        _loggerFactory = loggerFactory;
+    }
 
     public void Initialize()
     {
@@ -58,7 +74,7 @@ public class TrayHost : IDisposable
     {
         if (_controlWindow == null)
         {
-            _controlWindow = new ControlWindow();
+            _controlWindow = new ControlWindow(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _loggerFactory);
         }
 
         if (_controlWindow.IsVisible)

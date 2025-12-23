@@ -110,5 +110,17 @@ public class TokenStorage : ITokenProvider
             // Failed to store token
         }
     }
+
+    public void ClearToken()
+    {
+        try
+        {
+            CredDelete(TargetName, CRED_TYPE_GENERIC, 0);
+        }
+        catch
+        {
+            // Failed to delete token (may not exist)
+        }
+    }
 }
 

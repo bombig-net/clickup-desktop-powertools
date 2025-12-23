@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
@@ -41,6 +42,7 @@ public partial class App : Application
         // 3. Register exception handlers (they need the logger)
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         // 4. Initialize application
         _appStartup = new AppStartup(_loggerFactory);
@@ -57,6 +59,12 @@ public partial class App : Application
     {
         var exception = e.ExceptionObject as Exception;
         _logger?.LogCritical(exception, "Unhandled background thread exception (IsTerminating: {IsTerminating})", e.IsTerminating);
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _logger?.LogError(e.Exception, "Unobserved task exception");
+        e.SetObserved(); // Prevent potential issues, already logged
     }
 
     protected override void OnExit(ExitEventArgs e)

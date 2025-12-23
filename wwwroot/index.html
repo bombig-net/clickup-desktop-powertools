@@ -9,23 +9,84 @@
 <body>
     <div class="container">
         <header>
-            <h1>⚡ ClickUp Desktop PowerTools</h1>
+            <h1>ClickUp Desktop PowerTools</h1>
         </header>
         <main>
-            <section class="status">
+            <section class="card">
                 <h2>Status</h2>
-                <p>Core is running.</p>
+                <div class="status-row">
+                    <span class="status-label">Version</span>
+                    <span class="status-value" id="version">1.0.0</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">.NET Runtime</span>
+                    <span class="status-value" id="dotnet-version">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">WebView2</span>
+                    <span class="status-value" id="webview2-version">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">ClickUp Desktop</span>
+                    <span class="status-value" id="clickup-desktop-status">-</span>
+                    <button id="refresh-runtime-btn" class="btn btn-small btn-secondary">Refresh</button>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Uptime</span>
+                    <span class="status-value" id="uptime">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Logs</span>
+                    <span class="status-value status-path" id="log-path">-</span>
+                    <button id="open-logs-btn" class="btn btn-small btn-secondary">Open</button>
+                </div>
             </section>
-            <section class="info">
-                <h2>About</h2>
-                <p>PowerTools is a Windows companion for the ClickUp Desktop app.</p>
-                <p>This control window will be used to configure and manage tools.</p>
+
+            <section class="card">
+                <h2>Tools</h2>
+                <p class="card-description">Enable or disable PowerTools features.</p>
+                <div id="tools-list"></div>
+            </section>
+
+            <section class="card">
+                <h2>ClickUp API</h2>
+                <p class="card-description">Configure your personal ClickUp API token to enable PowerTools features.</p>
+                
+                <div class="form-group">
+                    <label for="token-input">API Token</label>
+                    <div class="input-row">
+                        <input type="password" 
+                               id="token-input" 
+                               placeholder="Enter your ClickUp API token"
+                               autocomplete="off"
+                               spellcheck="false">
+                        <button id="save-btn" class="btn btn-primary" disabled>Save</button>
+                    </div>
+                </div>
+
+                <div class="status-row">
+                    <span class="status-label">Status</span>
+                    <span class="status-value status-none" id="token-status">Not configured</span>
+                </div>
+
+                <div id="token-error" class="error-message" style="display: none;"></div>
+
+                <div class="button-row">
+                    <button id="test-btn" class="btn btn-secondary" disabled>Test Connection</button>
+                    <button id="clear-btn" class="btn btn-danger" disabled>Clear Token</button>
+                </div>
+
+                <p class="help-text">
+                    Get your API token from 
+                    <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener">ClickUp Settings &rarr; Apps</a>
+                </p>
             </section>
         </main>
         <footer>
             <p>PowerTools is experimental and intended for power users.</p>
         </footer>
     </div>
+    <script src="app.js"></script>
 </body>
 </html>
 
