@@ -136,6 +136,47 @@ A tool is not required to have its own UI.
 
 ---
 
+## WebUI Structure & Styling Rules (Mandatory)
+
+The Web UI is part of Core UI and must remain predictable, readable, and tool-agnostic.
+
+### JavaScript (WebUI)
+
+- No inline styles may be set via JavaScript.
+- JavaScript may only manipulate:
+  - DOM structure
+  - Text content
+  - Data attributes
+  - CSS class lists
+- UI state must be expressed via CSS classes, not style mutations.
+- Large functions must be split by responsibility (rendering, state sync, event wiring).
+
+### CSS Strategy
+
+- CSS is split by responsibility:
+  - `base.css` – resets, typography, globals
+  - `utilities.css` – layout and state utilities only
+  - `components.css` – reusable UI components
+  - `tools.css` – tool-specific styling
+- Utility classes must be generic, composable, and stateless.
+- Component styles must not encode application logic.
+- Tool styles must be scoped to tool containers.
+
+### Class Naming Discipline
+
+- Utility classes must use a `u-` prefix (e.g. `u-flex`, `u-gap-sm`).
+- State classes must use an `is-` or `has-` prefix (e.g. `is-disabled`, `has-error`).
+- Component classes must not be reused as utilities.
+
+### Prohibited
+
+- No CSS frameworks that require a build step.
+- No runtime-generated CSS rules.
+- No style mutations via JavaScript.
+- No global CSS overrides for tool-specific behavior.
+
+---
+
 ## ClickUp Integration Rules
 
 - ClickUp Desktop runtime communication is first-class
