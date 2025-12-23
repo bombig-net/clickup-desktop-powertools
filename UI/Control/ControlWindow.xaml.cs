@@ -337,9 +337,10 @@ public partial class ControlWindow : Window
         }
     }
 
-    private void HandleRefreshRuntimeStatus()
+    private async void HandleRefreshRuntimeStatus()
     {
         _coreState.ClickUpDesktopStatus = _clickUpRuntime.CheckStatus();
+        _coreState.ClickUpDebugPortAvailable = await _clickUpRuntime.CheckDebugPortAvailability(_systemIntegrationSettings.DebugPort);
         PushState();
     }
 
@@ -353,11 +354,15 @@ public partial class ControlWindow : Window
         // Refresh runtime status after short delay (process needs time to start)
         if (success)
         {
-            _ = System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
-                Dispatcher.Invoke(() => {
+            _ = System.Threading.Tasks.Task.Delay(2000).ContinueWith(async _ =>
+            {
+                await Dispatcher.InvokeAsync(async () =>
+                {
                     _coreState.ClickUpDesktopStatus = _clickUpRuntime.CheckStatus();
+                    _coreState.ClickUpDebugPortAvailable = await _clickUpRuntime.CheckDebugPortAvailability(_systemIntegrationSettings.DebugPort);
                     PushState();
-                }));
+                });
+            });
         }
     }
 
@@ -428,6 +433,7 @@ public partial class ControlWindow : Window
             logFilePath = _coreState.LogFilePath,
             uptime = uptimeString,
             clickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
+            clickUpDebugPortAvailable = _coreState.ClickUpDebugPortAvailable,
             hasApiToken = _coreState.HasApiToken,
             tokenValid = _coreState.TokenValid,
             clickUpInstallPath = _coreState.ClickUpInstallPath,

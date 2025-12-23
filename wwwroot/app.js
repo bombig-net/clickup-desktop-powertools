@@ -13,6 +13,7 @@
         logFilePath: '',
         uptime: '',
         clickUpDesktopStatus: '',
+        clickUpDebugPortAvailable: null,
         hasApiToken: false,
         tokenValid: null,
         clickUpInstallPath: null,
@@ -160,6 +161,12 @@
 
     // Update UI based on current state
     function updateUI() {
+        // Header version
+        const headerVersionEl = document.getElementById('header-version');
+        if (headerVersionEl) {
+            headerVersionEl.textContent = state.version || '1.0.0';
+        }
+
         // Version and diagnostics
         const versionEl = document.getElementById('version');
         if (versionEl) {
@@ -194,17 +201,74 @@
         }
 
         // Update status badges
-        updateBadge('badge-clickup', 
-            state.clickUpDesktopStatus === 'Running' ? 'valid' : 'none',
-            state.clickUpDesktopStatus === 'Running' ? 'Running' : 'Not Running');
+        // ClickUp badge: show both process and debug status
+        let clickUpBadgeText = '';
+        let clickUpBadgeClass = 'none';
+        let clickUpBadgeTitle = '';
+        
+        if (state.clickUpDesktopStatus === 'Running') {
+            if (state.clickUpDebugPortAvailable === true) {
+                clickUpBadgeText = 'Running (Debug Ready)';
+                clickUpBadgeClass = 'valid';
+                clickUpBadgeTitle = 'ClickUp Desktop is running and debug port is available';
+            } else if (state.clickUpDebugPortAvailable === false) {
+                clickUpBadgeText = 'Running (No Debug)';
+                clickUpBadgeClass = 'untested';
+                clickUpBadgeTitle = 'ClickUp Desktop is running but debug port is not available';
+            } else {
+                clickUpBadgeText = 'Running (Unknown)';
+                clickUpBadgeClass = 'untested';
+                clickUpBadgeTitle = 'ClickUp Desktop is running, debug status not checked';
+            }
+        } else {
+            clickUpBadgeText = 'Not Running';
+            clickUpBadgeClass = 'none';
+            clickUpBadgeTitle = 'ClickUp Desktop is not running';
+        }
+        
+        const clickUpBadge = document.getElementById('badge-clickup');
+        if (clickUpBadge) {
+            clickUpBadge.textContent = clickUpBadgeText;
+            clickUpBadge.className = `badge status-${clickUpBadgeClass}`;
+            clickUpBadge.title = clickUpBadgeTitle;
+        }
 
-        updateBadge('badge-api',
-            state.tokenValid === true ? 'valid' : 
-            state.tokenValid === false ? 'invalid' : 
-            state.hasApiToken ? 'untested' : 'none',
-            state.hasApiToken ? (state.tokenValid ? 'Valid' : 'Configured') : 'No Token');
+        // API badge: clearer labels
+        let apiBadgeText = '';
+        let apiBadgeClass = 'none';
+        let apiBadgeTitle = '';
+        
+        if (!state.hasApiToken) {
+            apiBadgeText = 'API: Not Set';
+            apiBadgeClass = 'none';
+            apiBadgeTitle = 'No ClickUp API token configured';
+        } else if (state.tokenValid === true) {
+            apiBadgeText = 'API: Valid';
+            apiBadgeClass = 'valid';
+            apiBadgeTitle = 'ClickUp API token is valid';
+        } else if (state.tokenValid === false) {
+            apiBadgeText = 'API: Invalid';
+            apiBadgeClass = 'invalid';
+            apiBadgeTitle = 'ClickUp API token is invalid';
+        } else {
+            apiBadgeText = 'API: Untested';
+            apiBadgeClass = 'untested';
+            apiBadgeTitle = 'ClickUp API token is configured but not tested';
+        }
+        
+        const apiBadge = document.getElementById('badge-api');
+        if (apiBadge) {
+            apiBadge.textContent = apiBadgeText;
+            apiBadge.className = `badge status-${apiBadgeClass}`;
+            apiBadge.title = apiBadgeTitle;
+        }
 
-        updateBadge('badge-uptime', null, state.uptime || '0m');
+        // Uptime badge
+        const uptimeBadge = document.getElementById('badge-uptime');
+        if (uptimeBadge) {
+            uptimeBadge.textContent = `Uptime: ${state.uptime || '0m'}`;
+            uptimeBadge.title = `Application uptime: ${state.uptime || '0m'}`;
+        }
 
         const logPathEl = document.getElementById('log-path');
         if (logPathEl) {
@@ -345,36 +409,41 @@
         sendMessage('set-tool-enabled', { toolId, enabled });
     }
 
-    // Update tools list UI
+    // Update tools list UI - create individual collapsible sections per tool
     function updateToolsList() {
-        const toolsList = document.getElementById('tools-list');
-        if (!toolsList) return;
+        const toolsContainer = document.getElementById('tools-container');
+        if (!toolsContainer) return;
 
         // Clear existing
-        toolsList.innerHTML = '';
+        toolsContainer.innerHTML = '';
 
         if (!state.tools || state.tools.length === 0) {
-            toolsList.innerHTML = '<p class="help-text">No tools available.</p>';
+            toolsContainer.innerHTML = '<p class="help-text">No tools available.</p>';
             return;
         }
 
         state.tools.forEach(tool => {
-            const toolRow = document.createElement('div');
-            toolRow.className = 'tool-row';
+            // Create details element (collapsible section)
+            const details = document.createElement('details');
+            details.className = 'section';
+            
+            // Summary (tool name)
+            const summary = document.createElement('summary');
+            summary.textContent = tool.name;
+            details.appendChild(summary);
 
-            const toolInfo = document.createElement('div');
-            toolInfo.className = 'tool-info';
+            // Description
+            const description = document.createElement('p');
+            description.className = 'card-description';
+            description.textContent = tool.description;
+            details.appendChild(description);
 
-            const toolName = document.createElement('span');
-            toolName.className = 'tool-name';
-            toolName.textContent = tool.name;
+            // Enable/disable toggle
+            const optionRow = document.createElement('div');
+            optionRow.className = 'option-row';
 
-            const toolDesc = document.createElement('span');
-            toolDesc.className = 'tool-description';
-            toolDesc.textContent = tool.description;
-
-            toolInfo.appendChild(toolName);
-            toolInfo.appendChild(toolDesc);
+            const label = document.createElement('span');
+            label.textContent = 'Enable Tool';
 
             const toggle = document.createElement('label');
             toggle.className = 'toggle';
@@ -392,9 +461,13 @@
             toggle.appendChild(checkbox);
             toggle.appendChild(slider);
 
-            toolRow.appendChild(toolInfo);
-            toolRow.appendChild(toggle);
-            toolsList.appendChild(toolRow);
+            optionRow.appendChild(label);
+            optionRow.appendChild(toggle);
+            details.appendChild(optionRow);
+
+            // Future: tool-specific settings can be added here
+
+            toolsContainer.appendChild(details);
         });
     }
 

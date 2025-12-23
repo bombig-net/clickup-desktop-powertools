@@ -20,6 +20,8 @@ public class CoreState
 
     // Runtime bridge status (mutable)
     public ClickUpDesktopStatus ClickUpDesktopStatus { get; set; } = ClickUpDesktopStatus.Unknown;
+    // Debug port availability: null = not checked, true = available, false = not available
+    public bool? ClickUpDebugPortAvailable { get; set; }
 
     // System integration state (derived at startup, refreshable)
     public string? ClickUpInstallPath { get; set; }  // Resolved path (override or auto-detected)

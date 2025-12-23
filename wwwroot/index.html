@@ -10,22 +10,21 @@
     <div class="container">
         <header>
             <h1>ClickUp Desktop PowerTools</h1>
-            <p class="intro">System companion for ClickUp Desktop</p>
+            <div class="header-meta">
+                <span>v<span id="header-version">1.0.0</span></span>
+                <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener">API Settings</a>
+            </div>
             <div class="status-badges">
-                <span class="badge" id="badge-clickup">ClickUp</span>
-                <span class="badge" id="badge-api">API</span>
-                <span class="badge" id="badge-uptime">0m</span>
+                <span class="badge" id="badge-clickup" title="ClickUp Desktop process and debug status">ClickUp</span>
+                <span class="badge" id="badge-api" title="ClickUp API token status">API</span>
+                <span class="badge" id="badge-uptime" title="Application uptime">0m</span>
             </div>
             <button id="launch-debug-btn" class="btn btn-primary">
                 Launch ClickUp Debug
             </button>
         </header>
         <main>
-            <details class="section" open>
-                <summary>Tools</summary>
-                <p class="card-description">Enable or disable PowerTools features.</p>
-                <div id="tools-list"></div>
-            </details>
+            <div id="tools-container"></div>
 
             <details class="section" open>
                 <summary>ClickUp API</summary>
