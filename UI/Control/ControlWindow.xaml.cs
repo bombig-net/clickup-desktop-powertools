@@ -106,10 +106,18 @@ public partial class ControlWindow : Window
 
     private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
+        _logger.LogInformation("Navigation completed: Success={Success}, WebViewFailed={Failed}, HttpStatusCode={StatusCode}", 
+            e.IsSuccess, _webViewFailed, e.HttpStatusCode);
+        
         if (e.IsSuccess && !_webViewFailed)
         {
             // Push initial state to WebUI
             PushState();
+        }
+        else
+        {
+            _logger.LogWarning("Navigation failed or WebView crashed. Success={Success}, Failed={Failed}", 
+                e.IsSuccess, _webViewFailed);
         }
     }
 
@@ -512,8 +520,7 @@ public partial class ControlWindow : Window
         {
             // Tool not instantiated yet - enable it first
             _toolManager?.OnToolActivationChanged("custom-css-js", true);
-            // Give ToolManager a moment to instantiate
-            System.Threading.Thread.Sleep(50);
+            // Tool is now instantiated synchronously - get it immediately
             tool = _toolManager?.GetToolInstance("custom-css-js") as Tools.CustomCssJs.CustomCssJsTool;
         }
 

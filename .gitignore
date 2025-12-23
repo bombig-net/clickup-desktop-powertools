@@ -31,3 +31,17 @@ TestResults/
 
 # Cursor / AI local state (keep rules, ignore cache)
 .cursor/cache/
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.svelte-kit/
+
+# Build output in wwwroot (generated files)
+wwwroot/index.html
+wwwroot/assets/
+wwwroot/*.js
+wwwroot/*.css

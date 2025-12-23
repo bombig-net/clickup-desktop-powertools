@@ -1,130 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClickUp Desktop PowerTools</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>ClickUp Desktop PowerTools</h1>
-            <div class="header-meta">
-                <span>v<span id="header-version">1.0.0</span></span>
-                <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener">API Settings</a>
-            </div>
-            <div class="status-badges">
-                <span class="badge" id="badge-clickup" title="ClickUp Desktop process and debug status">ClickUp</span>
-                <span class="badge" id="badge-api" title="ClickUp API token status">API</span>
-                <span class="badge" id="badge-uptime" title="Application uptime">0m</span>
-                <button id="header-refresh-btn" class="btn btn-small btn-secondary" title="Refresh all status information">Refresh</button>
-            </div>
-            <button id="launch-debug-btn" class="btn btn-primary">
-                Launch ClickUp Debug
-            </button>
-        </header>
-        <main>
-            <div id="tools-container"></div>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<link rel="modulepreload" href="/_app/immutable/entry/start.Ccp0LA7J.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/DFlX7M-8.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/TUtYN2Rs.js">
+		<link rel="modulepreload" href="/_app/immutable/entry/app.Ba_2OOa_.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/DyAPRj55.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/BT2g95M2.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/DCWXNHTg.js">
+		<link rel="modulepreload" href="/_app/immutable/chunks/STSOISP_.js">
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">
+			<script>
+				{
+					__sveltekit_1sf4h5e = {
+						base: ""
+					};
 
-            <details class="section">
-                <summary>ClickUp API</summary>
-                <p class="card-description">Configure your personal ClickUp API token to enable PowerTools features.</p>
-                
-                <div class="form-group">
-                    <label for="token-input">API Token</label>
-                    <div class="input-row">
-                        <input type="password" 
-                               id="token-input" 
-                               placeholder="Enter your ClickUp API token"
-                               autocomplete="off"
-                               spellcheck="false">
-                        <button id="save-btn" class="btn btn-primary" disabled>Save</button>
-                    </div>
-                </div>
+					const element = document.currentScript.parentElement;
 
-                <div class="status-row">
-                    <span class="status-label">Status</span>
-                    <span class="status-value status-none" id="token-status">Not configured</span>
-                </div>
-
-                <div id="token-error" class="error-message" style="display: none;"></div>
-
-                <div class="button-row">
-                    <button id="test-btn" class="btn btn-secondary" disabled>Test Connection</button>
-                    <button id="clear-btn" class="btn btn-danger" disabled>Clear Token</button>
-                </div>
-
-                <p class="help-text">
-                    Get your API token from 
-                    <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener">ClickUp Settings &rarr; Apps</a>
-                </p>
-            </details>
-
-            <details class="section">
-                <summary>System & Integration</summary>
-                
-                <div class="option-row">
-                    <span>Start with Windows</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="autostart-toggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="option-row">
-                    <span>ClickUp Location</span>
-                    <span id="clickup-path" class="status-path">-</span>
-                    <button id="open-clickup-btn" class="btn btn-small btn-secondary">Open</button>
-                    <button id="set-clickup-path-btn" class="btn btn-small btn-secondary">Set Path...</button>
-                </div>
-                
-                <div class="option-row">
-                    <span>Debug Port</span>
-                    <input type="number" id="debug-port-input" min="1024" max="65535" class="input-small">
-                    <button id="set-debug-port-btn" class="btn btn-small btn-secondary">Set</button>
-                </div>
-                
-                <div class="option-row">
-                    <span>Restart if Running</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="restart-if-running-toggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="help-text-small">Kill existing ClickUp before launching debug mode</span>
-                </div>
-            </details>
-
-            <details class="section">
-                <summary>Status & Diagnostics</summary>
-                <div class="status-row">
-                    <span class="status-label">Version</span>
-                    <span class="status-value" id="version">1.0.0</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">.NET Runtime</span>
-                    <span class="status-value" id="dotnet-version">-</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">WebView2</span>
-                    <span class="status-value" id="webview2-version">-</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">ClickUp Desktop</span>
-                    <span class="status-value" id="clickup-desktop-status">-</span>
-                    <button id="refresh-runtime-btn" class="btn btn-small btn-secondary">Refresh</button>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Logs</span>
-                    <span class="status-value status-path" id="log-path">-</span>
-                    <button id="open-logs-btn" class="btn btn-small btn-secondary">Open</button>
-                </div>
-            </details>
-        </main>
-        <footer>
-            <p>PowerTools is experimental and intended for power users.</p>
-        </footer>
-    </div>
-    <script src="app.js"></script>
-</body>
+				// Fix: Redirect /index.html to / for SvelteKit routing
+				// WebView2 navigates to /index.html, but SvelteKit expects /
+				if (window.location.pathname === '/index.html') {
+					window.history.replaceState({}, '', '/');
+				}
+				Promise.all([
+					import("/_app/immutable/entry/start.Ccp0LA7J.js"),
+					import("/_app/immutable/entry/app.Ba_2OOa_.js")
+				]).then(([kit, app]) => {
+					kit.start(app, element);
+				});
+				}
+			</script>
+		</div>
+	</body>
 </html>
+

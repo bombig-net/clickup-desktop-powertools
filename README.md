@@ -51,6 +51,53 @@ It is not an official ClickUp product.
 
 ---
 
+## Development
+
+### Prerequisites
+
+- .NET 8.0 SDK
+- Node.js LTS
+- npm
+
+### Building
+
+1. **Install frontend dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Build the frontend:**
+   ```bash
+   npm run build
+   ```
+   This builds the Svelte + Tailwind UI and outputs to `wwwroot/`.
+
+3. **Build the .NET application:**
+   ```bash
+   dotnet build
+   ```
+
+### Project Structure
+
+- `src/` - Source files for the Core Control Window UI (Svelte + Tailwind)
+- `wwwroot/` - **Build output only** - Generated files from frontend build. Do not edit files here directly.
+- `Core/` - Core platform functionality
+- `Tools/` - Individual tool implementations
+- `UI/` - WPF UI components
+
+### Frontend Development
+
+The Core Control Window UI is built with:
+- **Svelte** for reactive UI components
+- **Tailwind CSS** for utility-first styling
+- **Vite** as the build tool
+
+Source files are in `src/`. After running `npm run build`, the built files are output to `wwwroot/`, which the .NET application serves via WebView2.
+
+**Important:** `wwwroot/` is build output only. All source files are in `src/`. The build process will replace files in `wwwroot/` when you run `npm run build`.
+
+---
+
 ## Origin
 
 PowerTools is developed and used internally at **bombig.net**  
