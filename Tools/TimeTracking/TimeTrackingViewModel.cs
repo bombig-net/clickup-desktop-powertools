@@ -147,6 +147,7 @@ public class TimeTrackingViewModel : INotifyPropertyChanged
     }
 }
 
+#pragma warning disable CS0067 // Event is never used but required by ICommand interface
 public class RelayCommand : ICommand
 {
     private readonly Action _execute;
@@ -157,6 +158,7 @@ public class RelayCommand : ICommand
     }
 
     public event EventHandler? CanExecuteChanged;
+#pragma warning restore CS0067
 
     public bool CanExecute(object? parameter) => true;
 

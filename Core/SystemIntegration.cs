@@ -91,7 +91,7 @@ public class SystemIntegration
     // --- Launch ClickUp Debug Mode ---
 
     public (bool Success, string? Error) LaunchClickUpDebugMode(
-        string installPath, 
+        string? installPath, 
         SystemIntegrationSettings settings)
     {
         // Check if ClickUp is running
