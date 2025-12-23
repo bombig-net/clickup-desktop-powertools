@@ -73,6 +73,8 @@
         onMessage('state-changed', handleStateChanged);
         onMessage('test-result', handleTestResult);
         onMessage('launch-result', handleLaunchResult);
+        onMessage('custom-css-js-state', handleCustomCssJsState);
+        onMessage('debug-inspector-state', handleDebugInspectorState);
 
         // Request initial state
         sendMessage('get-state');
@@ -292,6 +294,12 @@
 
         // Update tools list
         updateToolsList();
+        
+        // Update Custom CSS/JS UI state if tool exists
+        const customCssJsTool = state.tools?.find(t => t.id === 'custom-css-js');
+        if (customCssJsTool) {
+            updateCustomCssJsUIState(customCssJsTool);
+        }
 
         // Token status
         const statusEl = document.getElementById('token-status');
@@ -456,37 +464,416 @@
             description.textContent = tool.description;
             details.appendChild(description);
 
-            // Enable/disable toggle
-            const optionRow = document.createElement('div');
-            optionRow.className = 'option-row';
+            // Enable/disable toggle (skip for custom-css-js, it has its own inside the section)
+            if (tool.id !== 'custom-css-js') {
+                const optionRow = document.createElement('div');
+                optionRow.className = 'option-row';
 
-            const label = document.createElement('span');
-            label.textContent = 'Enable Tool';
+                const label = document.createElement('span');
+                label.textContent = 'Enable Tool';
 
-            const toggle = document.createElement('label');
-            toggle.className = 'toggle';
+                const toggle = document.createElement('label');
+                toggle.className = 'toggle';
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = tool.enabled;
-            checkbox.addEventListener('change', () => {
-                handleToolToggle(tool.id, checkbox.checked);
-            });
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = tool.enabled;
+                checkbox.addEventListener('change', () => {
+                    handleToolToggle(tool.id, checkbox.checked);
+                    // Update tool.enabled immediately for UI responsiveness
+                    tool.enabled = checkbox.checked;
+                    // Request tool-specific state when enabled
+                    if (checkbox.checked) {
+                        if (tool.id === 'debug-inspector') {
+                            setTimeout(() => sendMessage('get-debug-inspector-state'), 100);
+                        }
+                    }
+                });
 
-            const slider = document.createElement('span');
-            slider.className = 'toggle-slider';
+                const slider = document.createElement('span');
+                slider.className = 'toggle-slider';
 
-            toggle.appendChild(checkbox);
-            toggle.appendChild(slider);
+                toggle.appendChild(checkbox);
+                toggle.appendChild(slider);
 
-            optionRow.appendChild(label);
-            optionRow.appendChild(toggle);
-            details.appendChild(optionRow);
+                optionRow.appendChild(label);
+                optionRow.appendChild(toggle);
+                details.appendChild(optionRow);
+            }
 
-            // Future: tool-specific settings can be added here
+            // Tool-specific UI
+            if (tool.id === 'custom-css-js') {
+                addCustomCssJsUI(details, tool);
+            } else if (tool.id === 'debug-inspector') {
+                addDebugInspectorUI(details, tool);
+            }
 
             toolsContainer.appendChild(details);
         });
+    }
+
+    // Add Custom CSS/JS UI
+    function addCustomCssJsUI(details, tool) {
+        // Enable/disable toggle as first option row
+        const enableOptionRow = document.createElement('div');
+        enableOptionRow.className = 'option-row';
+        enableOptionRow.style.marginTop = '1rem';
+        enableOptionRow.style.paddingTop = '0.75rem';
+        enableOptionRow.style.paddingBottom = '1rem';
+
+        const enableLabel = document.createElement('span');
+        enableLabel.textContent = 'Enable Tool';
+
+        const toggle = document.createElement('label');
+        toggle.className = 'toggle';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = tool.enabled;
+        checkbox.addEventListener('change', () => {
+            handleToolToggle(tool.id, checkbox.checked);
+            // Update tool.enabled immediately for UI responsiveness
+            tool.enabled = checkbox.checked;
+            // Request tool-specific state when enabled
+            if (checkbox.checked) {
+                setTimeout(() => {
+                    sendMessage('get-custom-css-js');
+                    // Update UI state
+                    updateCustomCssJsUIState(tool);
+                }, 100);
+            } else {
+                // Tool disabled - update UI immediately
+                updateCustomCssJsUIState(tool);
+            }
+        });
+
+        const slider = document.createElement('span');
+        slider.className = 'toggle-slider';
+
+        toggle.appendChild(checkbox);
+        toggle.appendChild(slider);
+
+        enableOptionRow.appendChild(enableLabel);
+        enableOptionRow.appendChild(toggle);
+        details.appendChild(enableOptionRow);
+
+        const cssContainer = document.createElement('div');
+        cssContainer.className = 'form-group';
+        cssContainer.style.marginTop = '1rem';
+        
+        const cssLabel = document.createElement('label');
+        cssLabel.textContent = 'Custom CSS';
+        cssLabel.setAttribute('for', `css-input-${tool.id}`);
+        cssContainer.appendChild(cssLabel);
+        
+        const cssTextarea = document.createElement('textarea');
+        cssTextarea.id = `css-input-${tool.id}`;
+        cssTextarea.className = 'code-input';
+        cssTextarea.placeholder = '/* Enter custom CSS here */';
+        cssTextarea.rows = 5;
+        cssTextarea.disabled = !tool.enabled;
+        cssContainer.appendChild(cssTextarea);
+        
+        const jsContainer = document.createElement('div');
+        jsContainer.className = 'form-group';
+        
+        const jsLabel = document.createElement('label');
+        jsLabel.textContent = 'Custom JavaScript';
+        jsLabel.setAttribute('for', `js-input-${tool.id}`);
+        jsContainer.appendChild(jsLabel);
+        
+        const jsTextarea = document.createElement('textarea');
+        jsTextarea.id = `js-input-${tool.id}`;
+        jsTextarea.className = 'code-input';
+        jsTextarea.placeholder = '// Enter custom JavaScript here';
+        jsTextarea.rows = 5;
+        jsTextarea.disabled = !tool.enabled;
+        jsContainer.appendChild(jsTextarea);
+        
+        const disabledNote = document.createElement('p');
+        disabledNote.className = 'help-text';
+        disabledNote.textContent = 'Enable tool to edit and apply custom CSS/JS';
+        disabledNote.style.display = tool.enabled ? 'none' : 'block';
+        disabledNote.style.marginTop = '0.5rem';
+        
+        // Footer container grouping Save & Apply button and status
+        const footerContainer = document.createElement('div');
+        footerContainer.className = 'tool-footer';
+        footerContainer.style.display = 'flex';
+        footerContainer.style.justifyContent = 'space-between';
+        footerContainer.style.alignItems = 'center';
+        footerContainer.style.gap = '1rem';
+        footerContainer.style.marginTop = '1rem';
+        footerContainer.style.paddingTop = '1rem';
+        footerContainer.style.paddingBottom = '1rem';
+        footerContainer.style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-secondary';
+        saveBtn.textContent = 'Save & Apply';
+        saveBtn.disabled = !tool.enabled;
+        
+        // Track if apply has been attempted
+        let applyAttempted = false;
+        
+        // Status display (initially hidden)
+        const statusContainer = document.createElement('div');
+        statusContainer.className = 'status-row';
+        statusContainer.style.display = 'none';
+        statusContainer.style.margin = '0';
+        statusContainer.style.border = 'none';
+        statusContainer.style.padding = '0';
+        const statusLabel = document.createElement('span');
+        statusLabel.className = 'status-label';
+        statusLabel.textContent = 'Last Injection';
+        statusContainer.appendChild(statusLabel);
+        const statusValue = document.createElement('span');
+        statusValue.className = 'status-value';
+        statusValue.id = `css-js-status-${tool.id}`;
+        statusValue.textContent = '-';
+        statusContainer.appendChild(statusValue);
+        
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'error-message';
+        errorContainer.id = `css-js-error-${tool.id}`;
+        errorContainer.style.display = 'none';
+        
+        // Clear status when content changes
+        const clearStatus = () => {
+            if (applyAttempted) {
+                applyAttempted = false;
+                statusContainer.style.display = 'none';
+                statusContainer.removeAttribute('data-apply-attempted');
+                statusValue.textContent = '-';
+                statusValue.className = 'status-value';
+                errorContainer.style.display = 'none';
+            }
+        };
+        
+        cssTextarea.addEventListener('input', clearStatus);
+        jsTextarea.addEventListener('input', clearStatus);
+        
+        saveBtn.addEventListener('click', () => {
+            // Double-check enabled state before sending
+            if (!tool.enabled) {
+                return;
+            }
+            applyAttempted = true;
+            statusContainer.style.display = 'flex';
+            // Mark status container as having attempted apply
+            statusContainer.setAttribute('data-apply-attempted', 'true');
+            const css = cssTextarea.value;
+            const js = jsTextarea.value;
+            sendMessage('set-custom-css-js', { css, javascript: js });
+        });
+        
+        // Store reference for clearStatus function to access
+        statusContainer._clearStatus = clearStatus;
+        
+        footerContainer.appendChild(saveBtn);
+        footerContainer.appendChild(statusContainer);
+        
+        details.appendChild(cssContainer);
+        details.appendChild(jsContainer);
+        details.appendChild(disabledNote);
+        details.appendChild(footerContainer);
+        // Error container should have margin-top for spacing from footer
+        errorContainer.style.marginTop = '0.5rem';
+        details.appendChild(errorContainer);
+        
+        // Request initial state only if enabled
+        if (tool.enabled) {
+            sendMessage('get-custom-css-js');
+        }
+    }
+
+    // Add Debug Inspector UI
+    function addDebugInspectorUI(details, tool) {
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'debug-info';
+        
+        const connectionRow = document.createElement('div');
+        connectionRow.className = 'status-row';
+        connectionRow.innerHTML = '<span class="status-label">Connection State</span><span class="status-value" id="debug-connection-state">-</span>';
+        
+        const urlRow = document.createElement('div');
+        urlRow.className = 'status-row';
+        urlRow.innerHTML = '<span class="status-label">Last Known URL</span><span class="status-value status-path" id="debug-last-url">-</span>';
+        
+        const portRow = document.createElement('div');
+        portRow.className = 'status-row';
+        portRow.innerHTML = '<span class="status-label">Debug Port</span><span class="status-value" id="debug-port">-</span>';
+        
+        const portAvailableRow = document.createElement('div');
+        portAvailableRow.className = 'status-row';
+        portAvailableRow.innerHTML = '<span class="status-label">Port Available</span><span class="status-value" id="debug-port-available">-</span>';
+        
+        const clickupStatusRow = document.createElement('div');
+        clickupStatusRow.className = 'status-row';
+        clickupStatusRow.innerHTML = '<span class="status-label">ClickUp Status</span><span class="status-value" id="debug-clickup-status">-</span>';
+        
+        const navHeader = document.createElement('div');
+        navHeader.className = 'status-label';
+        navHeader.style.marginTop = '1rem';
+        navHeader.textContent = 'Recent Navigations';
+        
+        const navList = document.createElement('div');
+        navList.id = 'debug-navigations';
+        navList.className = 'debug-list';
+        
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'btn btn-secondary';
+        refreshBtn.textContent = 'Refresh';
+        refreshBtn.addEventListener('click', () => {
+            sendMessage('get-debug-inspector-state');
+        });
+        
+        infoContainer.appendChild(connectionRow);
+        infoContainer.appendChild(urlRow);
+        infoContainer.appendChild(portRow);
+        infoContainer.appendChild(portAvailableRow);
+        infoContainer.appendChild(clickupStatusRow);
+        infoContainer.appendChild(navHeader);
+        infoContainer.appendChild(navList);
+        infoContainer.appendChild(refreshBtn);
+        
+        details.appendChild(infoContainer);
+        
+        // Request initial state
+        sendMessage('get-debug-inspector-state');
+    }
+
+    // Update Custom CSS/JS UI state based on tool enabled status
+    function updateCustomCssJsUIState(tool) {
+        const cssInput = document.getElementById('css-input-custom-css-js');
+        const jsInput = document.getElementById('js-input-custom-css-js');
+        const statusContainer = cssInput?.closest('.section')?.querySelector('.status-row');
+        const disabledNote = cssInput?.closest('.section')?.querySelector('.help-text');
+        const saveBtn = cssInput?.closest('.section')?.querySelector('.tool-footer')?.querySelector('.btn');
+        
+        if (cssInput) cssInput.disabled = !tool.enabled;
+        if (jsInput) jsInput.disabled = !tool.enabled;
+        // Status container visibility is controlled by apply attempt, not just enabled state
+        // But if disabled, hide it
+        if (statusContainer && !tool.enabled) {
+            statusContainer.style.display = 'none';
+            statusContainer.removeAttribute('data-apply-attempted');
+        }
+        if (disabledNote) disabledNote.style.display = tool.enabled ? 'none' : 'block';
+        if (saveBtn) saveBtn.disabled = !tool.enabled;
+    }
+
+    // Handle Custom CSS/JS state
+    function handleCustomCssJsState(payload) {
+        const cssInput = document.getElementById('css-input-custom-css-js');
+        const jsInput = document.getElementById('js-input-custom-css-js');
+        const statusEl = document.getElementById('css-js-status-custom-css-js');
+        const errorEl = document.getElementById('css-js-error-custom-css-js');
+        
+        // Find status container to check if apply was attempted
+        const statusContainer = statusEl?.closest('.status-row');
+        const applyAttempted = statusContainer?.getAttribute('data-apply-attempted') === 'true';
+        
+        // Find tool enabled state from current state
+        const tool = state.tools?.find(t => t.id === 'custom-css-js');
+        const isEnabled = tool?.enabled ?? false;
+        
+        if (cssInput && payload.css !== undefined) {
+            cssInput.value = payload.css || '';
+        }
+        if (jsInput && payload.js !== undefined) {
+            jsInput.value = payload.js || '';
+        }
+        
+        // Only show status/error if tool is enabled AND apply was attempted
+        if (statusEl && statusContainer) {
+            if (!isEnabled || !applyAttempted) {
+                // Hide status if disabled or no apply attempted
+                statusContainer.style.display = 'none';
+                statusEl.textContent = '-';
+                statusEl.className = 'status-value';
+                if (errorEl) {
+                    errorEl.style.display = 'none';
+                }
+            } else if (payload.lastError) {
+                // Show error if apply was attempted and error exists
+                statusContainer.style.display = 'flex';
+                statusEl.textContent = 'Error';
+                statusEl.className = 'status-value status-invalid';
+                if (errorEl) {
+                    errorEl.textContent = payload.lastError;
+                    errorEl.style.display = 'block';
+                }
+            } else if (payload.lastResult) {
+                // Show success if apply was attempted and result exists
+                statusContainer.style.display = 'flex';
+                statusEl.textContent = payload.lastResult;
+                statusEl.className = 'status-value status-valid';
+                if (errorEl) {
+                    errorEl.style.display = 'none';
+                }
+            } else {
+                // No result yet, but apply was attempted - show placeholder
+                statusContainer.style.display = 'flex';
+                statusEl.textContent = '-';
+                statusEl.className = 'status-value';
+                if (errorEl) {
+                    errorEl.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // Handle Debug Inspector state
+    function handleDebugInspectorState(payload) {
+        const connectionEl = document.getElementById('debug-connection-state');
+        const urlEl = document.getElementById('debug-last-url');
+        const portEl = document.getElementById('debug-port');
+        const portAvailableEl = document.getElementById('debug-port-available');
+        const clickupStatusEl = document.getElementById('debug-clickup-status');
+        const navListEl = document.getElementById('debug-navigations');
+        
+        if (connectionEl) {
+            connectionEl.textContent = payload.connectionState || '-';
+            const stateClass = payload.connectionState === 'Connected' ? 'status-valid' : 
+                              payload.connectionState === 'Failed' ? 'status-invalid' : 'status-untested';
+            connectionEl.className = `status-value ${stateClass}`;
+        }
+        
+        if (urlEl) {
+            urlEl.textContent = payload.lastKnownUrl || '-';
+        }
+        
+        if (portEl) {
+            portEl.textContent = payload.debugPort?.toString() || '-';
+        }
+        
+        if (portAvailableEl) {
+            if (payload.debugPortAvailable === true) {
+                portAvailableEl.textContent = 'Yes';
+                portAvailableEl.className = 'status-value status-valid';
+            } else if (payload.debugPortAvailable === false) {
+                portAvailableEl.textContent = 'No';
+                portAvailableEl.className = 'status-value status-invalid';
+            } else {
+                portAvailableEl.textContent = 'Unknown';
+                portAvailableEl.className = 'status-value status-untested';
+            }
+        }
+        
+        if (clickupStatusEl) {
+            clickupStatusEl.textContent = payload.clickUpDesktopStatus || '-';
+        }
+        
+        if (navListEl && payload.recentNavigations) {
+            if (payload.recentNavigations.length === 0) {
+                navListEl.innerHTML = '<div class="help-text">No navigation events yet</div>';
+            } else {
+                navListEl.innerHTML = payload.recentNavigations.map(nav => 
+                    `<div class="debug-list-item">${nav}</div>`
+                ).join('');
+            }
+        }
     }
 
     // Setup UI event listeners

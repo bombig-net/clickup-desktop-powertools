@@ -1,15 +1,18 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Threading;
+using ClickUpDesktopPowerTools.Core;
 
 namespace ClickUpDesktopPowerTools.Tools.TimeTracking;
 
-public class TimeTrackingViewModel : INotifyPropertyChanged
+public class TimeTrackingViewModel : INotifyPropertyChanged, IToolLifecycle
 {
     private readonly TimeTrackingService _service;
     private readonly DispatcherTimer _uiRefreshTimer;
+    private RuntimeContext? _runtimeContext;
     private string _currentTaskName = "No task";
     private string _elapsedTime = "00:00:00";
     private bool _isRunning = false;
@@ -144,6 +147,54 @@ public class TimeTrackingViewModel : INotifyPropertyChanged
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    // IToolLifecycle implementation
+    public void OnEnable()
+    {
+        // Tool enabled - no action needed, service already running if configured
+    }
+
+    public void OnDisable()
+    {
+        // Tool disabled - clear runtime context
+        _runtimeContext = null;
+    }
+
+    public void OnRuntimeReady(RuntimeContext ctx)
+    {
+        // Runtime connected - store context and start polling task ID
+        _runtimeContext = ctx;
+        
+        // Start background task to poll task ID from runtime
+        Task.Run(async () =>
+        {
+            while (_runtimeContext != null)
+            {
+                try
+                {
+                    var taskId = await _runtimeContext.GetTaskIdAsync();
+                    if (!string.IsNullOrEmpty(taskId))
+                    {
+                        // Task ID available from runtime - could be used for auto-starting timer
+                        // For now, just log it
+                        System.Diagnostics.Debug.WriteLine($"Current task ID from runtime: {taskId}");
+                    }
+                }
+                catch
+                {
+                    // Ignore errors in background polling
+                }
+                
+                await Task.Delay(TimeSpan.FromSeconds(5)); // Poll every 5 seconds
+            }
+        });
+    }
+
+    public void OnRuntimeDisconnected()
+    {
+        // Runtime disconnected - clear context
+        _runtimeContext = null;
     }
 }
 

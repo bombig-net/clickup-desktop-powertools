@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -21,6 +22,8 @@ public partial class ControlWindow : Window
     private readonly ClickUpRuntime _clickUpRuntime;
     private readonly SystemIntegration _systemIntegration;
     private readonly SystemIntegrationSettings _systemIntegrationSettings;
+    private readonly RuntimeBridge? _runtimeBridge;
+    private readonly ToolManager? _toolManager;
     private readonly ILogger<ControlWindow> _logger;
     private readonly ToolActivationSettings _toolActivation;
 
@@ -29,7 +32,7 @@ public partial class ControlWindow : Window
     private bool _webViewFailed = false;
     private bool _hasAttemptedReload = false;
 
-    public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, ILoggerFactory loggerFactory)
+    public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, RuntimeBridge? runtimeBridge, ToolManager? toolManager, ILoggerFactory loggerFactory)
     {
         _tokenStorage = tokenStorage;
         _clickUpApi = clickUpApi;
@@ -37,6 +40,8 @@ public partial class ControlWindow : Window
         _clickUpRuntime = clickUpRuntime;
         _systemIntegration = systemIntegration;
         _systemIntegrationSettings = systemIntegrationSettings;
+        _runtimeBridge = runtimeBridge;
+        _toolManager = toolManager;
         _logger = loggerFactory.CreateLogger<ControlWindow>();
         _toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
 
@@ -202,12 +207,12 @@ public partial class ControlWindow : Window
                     HandleSetToolEnabled(message["payload"]);
                     break;
 
-                case "open-log-folder":
-                    HandleOpenLogFolder();
-                    break;
-
                 case "refresh-runtime-status":
                     HandleRefreshRuntimeStatus();
+                    break;
+
+                case "open-log-folder":
+                    HandleOpenLogFolder();
                     break;
 
                 case "launch-clickup-debug":
@@ -236,6 +241,18 @@ public partial class ControlWindow : Window
 
                 case "set-restart-if-running":
                     HandleSetRestartIfRunning(message["payload"]);
+                    break;
+
+                case "get-custom-css-js":
+                    HandleGetCustomCssJs();
+                    break;
+
+                case "set-custom-css-js":
+                    HandleSetCustomCssJs(message["payload"]);
+                    break;
+
+                case "get-debug-inspector-state":
+                    HandleGetDebugInspectorState();
                     break;
 
                 default:
@@ -313,6 +330,13 @@ public partial class ControlWindow : Window
 
         _toolActivation.Enabled[toolId] = enabled;
         SettingsManager.Save("ToolActivation", _toolActivation);
+        
+        // Update CoreState
+        _coreState.ActiveTools[toolId] = enabled;
+        
+        // Notify ToolManager
+        _toolManager?.OnToolActivationChanged(toolId, enabled);
+        
         _logger.LogInformation("Tool {ToolId} enabled: {Enabled}", toolId, enabled);
         PushState();
     }
@@ -341,6 +365,21 @@ public partial class ControlWindow : Window
     {
         _coreState.ClickUpDesktopStatus = _clickUpRuntime.CheckStatus();
         _coreState.ClickUpDebugPortAvailable = await _clickUpRuntime.CheckDebugPortAvailability(_systemIntegrationSettings.DebugPort);
+        
+        // If runtime bridge exists and ClickUp is running, try to connect
+        if (_runtimeBridge != null && _coreState.ClickUpDesktopStatus == ClickUpDesktopStatus.Running)
+        {
+            _ = Task.Run(async () =>
+            {
+                var connected = await _runtimeBridge.TryConnectAsync(_systemIntegrationSettings.DebugPort);
+                if (connected && _toolManager != null)
+                {
+                    var ctx = new RuntimeContext(_runtimeBridge);
+                    _toolManager.OnRuntimeConnected(ctx);
+                }
+            });
+        }
+        
         PushState();
     }
 
@@ -417,6 +456,106 @@ public partial class ControlWindow : Window
         PushState();
     }
 
+    private void HandleGetCustomCssJs()
+    {
+        // Check if tool is enabled
+        if (!_toolActivation.Enabled.GetValueOrDefault("custom-css-js", false))
+        {
+            // Tool disabled - return empty state
+            SendMessage("custom-css-js-state", new
+            {
+                css = string.Empty,
+                js = string.Empty,
+                lastResult = (string?)null,
+                lastError = (string?)null
+            });
+            return;
+        }
+
+        var tool = _toolManager?.GetToolInstance("custom-css-js") as Tools.CustomCssJs.CustomCssJsTool;
+        if (tool != null)
+        {
+            var (css, js) = tool.GetSettings();
+            SendMessage("custom-css-js-state", new
+            {
+                css = css ?? string.Empty,
+                js = js ?? string.Empty,
+                lastResult = tool.LastInjectionResult,
+                lastError = tool.LastInjectionError
+            });
+        }
+        else
+        {
+            SendMessage("custom-css-js-state", new
+            {
+                css = string.Empty,
+                js = string.Empty,
+                lastResult = (string?)null,
+                lastError = (string?)null
+            });
+        }
+    }
+
+    private void HandleSetCustomCssJs(JsonNode? payload)
+    {
+        // Check if tool is enabled - if not, reject the request
+        if (!_toolActivation.Enabled.GetValueOrDefault("custom-css-js", false))
+        {
+            _logger.LogWarning("Attempted to apply Custom CSS/JS while tool is disabled");
+            // Return empty state to reflect disabled state
+            HandleGetCustomCssJs();
+            return;
+        }
+
+        var tool = _toolManager?.GetToolInstance("custom-css-js") as Tools.CustomCssJs.CustomCssJsTool;
+        if (tool == null)
+        {
+            // Tool not instantiated yet - enable it first
+            _toolManager?.OnToolActivationChanged("custom-css-js", true);
+            // Give ToolManager a moment to instantiate
+            System.Threading.Thread.Sleep(50);
+            tool = _toolManager?.GetToolInstance("custom-css-js") as Tools.CustomCssJs.CustomCssJsTool;
+        }
+
+        if (tool != null)
+        {
+            var css = payload?["css"]?.GetValue<string>();
+            var js = payload?["javascript"]?.GetValue<string>();
+            tool.UpdateSettings(css, js);
+            _logger.LogInformation("Custom CSS/JS updated");
+            
+            // Send updated state back
+            HandleGetCustomCssJs();
+        }
+        else
+        {
+            _logger.LogWarning("Custom CSS/JS tool not available");
+        }
+    }
+
+    private void HandleGetDebugInspectorState()
+    {
+        var tool = _toolManager?.GetToolInstance("debug-inspector") as Tools.DebugInspector.DebugInspectorTool;
+        if (tool != null)
+        {
+            var state = tool.GetState();
+            SendMessage("debug-inspector-state", state);
+        }
+        else
+        {
+            // Return empty state if tool not instantiated
+            SendMessage("debug-inspector-state", new Tools.DebugInspector.DebugInspectorState
+            {
+                ConnectionState = _coreState.RuntimeConnectionState.ToString(),
+                LastKnownUrl = _coreState.LastKnownUrl,
+                ClickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
+                DebugPortAvailable = _coreState.ClickUpDebugPortAvailable,
+                DebugPort = _systemIntegrationSettings.DebugPort,
+                RecentNavigations = new List<string>()
+            });
+        }
+    }
+
     private void PushState()
     {
         // Calculate uptime
@@ -441,6 +580,9 @@ public partial class ControlWindow : Window
             debugPort = _systemIntegrationSettings.DebugPort,
             restartIfRunning = _systemIntegrationSettings.RestartIfRunning,
             autostartEnabled = _coreState.AutostartEnabled,
+            runtimeConnectionState = _coreState.RuntimeConnectionState.ToString(),
+            lastKnownUrl = _coreState.LastKnownUrl,
+            lastKnownTaskId = _coreState.LastKnownTaskId,
             tools = ToolRegistry.Tools.Select(t => new
             {
                 id = t.Id,

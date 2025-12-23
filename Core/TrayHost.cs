@@ -14,13 +14,15 @@ public class TrayHost : IDisposable
     private readonly ClickUpRuntime _clickUpRuntime;
     private readonly SystemIntegration _systemIntegration;
     private readonly SystemIntegrationSettings _systemIntegrationSettings;
+    private readonly RuntimeBridge? _runtimeBridge;
+    private readonly ToolManager? _toolManager;
     private readonly ILoggerFactory _loggerFactory;
 
     private TaskbarIcon? _taskbarIcon;
     private ControlWindow? _controlWindow;
     private bool _disposed;
 
-    public TrayHost(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, ILoggerFactory loggerFactory)
+    public TrayHost(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, RuntimeBridge? runtimeBridge, ToolManager? toolManager, ILoggerFactory loggerFactory)
     {
         _tokenStorage = tokenStorage;
         _clickUpApi = clickUpApi;
@@ -28,6 +30,8 @@ public class TrayHost : IDisposable
         _clickUpRuntime = clickUpRuntime;
         _systemIntegration = systemIntegration;
         _systemIntegrationSettings = systemIntegrationSettings;
+        _runtimeBridge = runtimeBridge;
+        _toolManager = toolManager;
         _loggerFactory = loggerFactory;
     }
 
@@ -78,7 +82,7 @@ public class TrayHost : IDisposable
     {
         if (_controlWindow == null)
         {
-            _controlWindow = new ControlWindow(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _systemIntegration, _systemIntegrationSettings, _loggerFactory);
+            _controlWindow = new ControlWindow(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _systemIntegration, _systemIntegrationSettings, _runtimeBridge, _toolManager, _loggerFactory);
         }
 
         if (_controlWindow.IsVisible)

@@ -511,3 +511,59 @@ footer p {
     box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.2);
 }
 
+/* Code input styles */
+.code-input {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #e5e5e5;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.code-input:focus {
+    outline: none;
+    border-color: rgba(125, 211, 252, 0.5);
+    box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.1);
+}
+
+.code-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.code-input::placeholder {
+    color: #6b7280;
+}
+
+/* Debug info styles */
+.debug-info {
+    margin-top: 1rem;
+}
+
+.debug-list {
+    margin-top: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.debug-list-item {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    color: #a3a3a3;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.debug-list-item:last-child {
+    border-bottom: none;
+}
+
