@@ -4,236 +4,216 @@ alwaysApply: true
 
 # ClickUp Desktop PowerTools – Development Rules
 
-These rules define how this project must be structured and how changes are allowed to happen.  
-They are authoritative. If something is not explicitly allowed here, it must not be done.
+This document defines the authoritative architectural and development rules for
+ClickUp Desktop PowerTools.
 
-This file exists to prevent overengineering, architectural drift, and incorrect assumptions by humans or AI.
+If a decision or implementation is not supported by this document, it must not be made.
+
+The rules are written to prevent architectural drift, accidental coupling,
+and ambiguous decisions under AI-assisted development.
 
 ---
 
-## Architecture Constraints
+## 1. Global Architectural Invariants (Apply Everywhere)
 
-1. **One Core, many Tools**  
+These rules apply to the entire project, without exception.
+
+### 1.1 Core and Tools
+
+1. **Exactly one Core, many Tools**  
    The application has exactly one Core module and multiple independent Tools.
 
 2. **Tools do not depend on each other**  
-   A tool must never reference another tool’s code, types, or state.
+   A Tool must never reference another Tool’s code, types, or state.
 
 3. **Core is platform-level, not feature-level**  
-   Core contains ClickUp- and system-level infrastructure and shared state.  
-   Feature-specific business logic belongs in Tools, not in Core.
+   Core contains system integration, ClickUp integration, lifecycle management,
+   and shared infrastructure only.  
+   Feature-specific logic belongs in Tools.
 
 4. **No dynamic plugin loading**  
-   All tools are compiled into the application.  
+   All Tools are compiled into the application.  
    There is no runtime plugin system.
 
-5. **No framework-style abstractions**  
-   Do not introduce base classes, marker interfaces, or generic frameworks for “future extensibility”.  
+5. **No speculative frameworks or abstractions**  
+   Do not introduce generic frameworks, base classes, or extensibility layers
+   for hypothetical future use.  
    Prefer explicit, concrete code.
 
 ---
 
-## Dependency Direction
+### 1.2 Dependency Direction
 
-- **Tools may depend on Core**
-- **Core must not depend on Tools**
-- **All UI binds only to ViewModels**
-- Views must not reference Core components or Services directly
-
-This applies to all UI layers, including Core UI and Tool UIs.
+- Tools may depend on Core.
+- Core must not depend on Tools.
+- UI layers must not reference Core services directly.
+- UI layers bind only to exposed state or message contracts.
 
 ---
 
-## Core Responsibilities (Strictly Limited)
+## 2. Core Responsibilities (Strict)
 
-The Core is the authoritative ClickUp and system integration layer.
+The Core is the authoritative platform layer.
 
-Core may contain:
+### 2.1 Core may contain
+
 - ClickUp Desktop runtime communication
-- ClickUp API access (single, shared service)
+- ClickUp API access (exactly one service, raw HTTP)
 - Shared ClickUp-centric state and lifecycle management
 - Application lifecycle management
 - System integration (idle state, focus, hotkeys)
 - Secure token storage
-
-Core may additionally contain the following if required at platform level:
 - Configuration persistence
 - Logging
 - System tray integration
 - Autostart handling
 
-Core must never contain:
+### 2.2 Core must never contain
+
 - Tool-specific feature logic
 - Tool-specific business rules
 - Tool-specific UI components
-- Interpretation of tool configuration
+- Interpretation or validation of tool configuration
 - Speculative abstractions
 
-**Important clarification:**  
-Core may store, render, and pass through tool configuration,  
-but must not interpret, validate, or act on tool-specific configuration semantics.
+Core may store and pass through tool configuration data,
+but must not interpret its semantics.
 
 ---
 
-## Tool Model
+## 3. Tool Model
 
 A Tool is a self-contained feature module built on top of the Core.
 
-### A Tool may:
-- Consume ClickUp runtime or API state exposed by the Core
-- Receive its configuration data from Core
-- Provide optional UI surfaces (overlay widgets, panels, windows)
+### 3.1 A Tool may
+
+- Consume runtime or API state exposed by Core
+- Receive configuration data from Core
+- Provide optional UI surfaces (WPF, WebView2, overlays, widgets)
 - Run background logic
 - Trigger notifications
 
-### A Tool must:
+### 3.2 A Tool must
+
 - Own its own logic and state
 - Own the meaning and interpretation of its configuration
 - Be removable without breaking the application
-- Not depend on other tools
+- Not depend on other Tools
 - Not leak feature logic into Core
 
+Tools are free in their internal UI and implementation choices,
+as long as global invariants are respected.
+
 ---
 
-## UI Strategy
+## 4. UI Surfaces Overview
 
-### Core UI (Mandatory)
+PowerTools may host multiple UI surfaces:
 
-- A dedicated PowerTools control window
-- Used to configure and control the Core and manage tools
-- Hosts tool activation and tool configuration surfaces
-- Lives in the system tray when not actively used
-
-The Core UI may:
-- Enable or disable tools
-- Render tool configuration controls
-- Persist tool configuration
-- Pass configuration data to tools
-
-The Core UI must not:
-- Implement tool behavior
-- Contain tool-specific business logic
-- Make assumptions about what tool configuration means
-
-### Tool UIs (Optional)
-
-Tools may provide their own UI surfaces, such as:
-- Overlays
-- Widgets
-- Panels
+- Core Control Window
+- Tool-specific windows or overlays
 - Background-only tools with no UI
 
-Tool UIs are optional and feature-driven.  
-A tool is not required to have its own UI.
+Each UI surface must respect Core and Tool boundaries,
+but UI technology choices may differ per surface.
 
 ---
 
-## UI Technology Constraint (Mandatory)
+## 5. Core Control Window (Mandatory UI Surface)
 
-- The primary Core control and configuration UI is implemented as a **Web UI rendered via WebView2**
-- Native UI (WPF) is used only where tight system integration is required (e.g. overlays)
-- Core logic must remain UI-technology-agnostic
+This section applies **only** to the Core control and configuration window
+opened from the system tray.
 
----
+### 5.1 Technology Commitment
 
-## WebUI Structure & Styling Rules (Mandatory)
+The Core Control Window is implemented as:
 
-The Web UI is part of Core UI and must remain predictable, readable, and tool-agnostic.
+- WebView2
+- Svelte for UI rendering
+- Utility-first CSS using Tailwind
+- A build step is mandatory for this UI surface
 
-### JavaScript (WebUI)
-
-- No inline styles may be set via JavaScript.
-- JavaScript may only manipulate:
-  - DOM structure
-  - Text content
-  - Data attributes
-  - CSS class lists
-- UI state must be expressed via CSS classes, not style mutations.
-- Large functions must be split by responsibility (rendering, state sync, event wiring).
-
-### CSS Strategy
-
-- CSS is split by responsibility:
-  - `base.css` – resets, typography, globals
-  - `utilities.css` – layout and state utilities only
-  - `components.css` – reusable UI components
-  - `tools.css` – tool-specific styling
-- Utility classes must be generic, composable, and stateless.
-- Component styles must not encode application logic.
-- Tool styles must be scoped to tool containers.
-
-### Class Naming Discipline
-
-- Utility classes must use a `u-` prefix (e.g. `u-flex`, `u-gap-sm`).
-- State classes must use an `is-` or `has-` prefix (e.g. `is-disabled`, `has-error`).
-- Component classes must not be reused as utilities.
-
-### Prohibited
-
-- No CSS frameworks that require a build step.
-- No runtime-generated CSS rules.
-- No style mutations via JavaScript.
-- No global CSS overrides for tool-specific behavior.
+This commitment applies only to the Core Control Window.
+It does not apply to Tool UIs.
 
 ---
 
-## ClickUp Integration Rules
+### 5.2 Rendering and State Model
 
-- ClickUp Desktop runtime communication is first-class
-- Runtime integration is preferred for UI-related state and interaction
-- ClickUp API access is complementary or used as fallback
-- Exactly one ClickUp API service exists in Core
-- Raw HTTP access only
-- No feature-specific methods in the API layer
-- No business interpretation inside the API service
-- Personal ClickUp API tokens only
-- Tokens stored via Windows Credential Manager
-- OAuth is explicitly out of scope
+- The UI is declarative and reactive.
+- UI updates are driven by state changes.
+- Manual DOM manipulation is not allowed.
+- UI components must not call Core services directly.
+- Communication with Core happens only through a defined message or state bridge.
 
 ---
 
-## Development Principles
+### 5.3 Styling Rules
 
-1. **Structure over abstraction**  
-   Clear folders and explicit wiring beat clever patterns.
-
-2. **Explicit over clever**  
-   Code must be readable and obvious.
-
-3. **Features drive architecture**  
-   Architecture exists to support real features, not hypothetical ones.
-
-4. **Platform logic belongs in Core, feature logic does not**
-
-5. **Reuse existing infrastructure first**  
-   If infrastructure already exists in the codebase, it must be reused.  
-   Introducing parallel solutions for the same concern is not allowed.
+- Utility-first CSS is the default.
+- Styling is static and determined at build time.
+- Runtime-generated CSS rules are not allowed.
+- JavaScript must not set inline styles.
+- Component-scoped styles are allowed where supported.
+- Global CSS must be minimal and intentional.
 
 ---
 
-## Change Discipline (Critical)
+## 6. Tool UI Surfaces (Optional)
 
-- Do not refactor existing code unless explicitly instructed
-- Do not rename files, folders, or classes “for clarity”
-- Do not move code between Core and Tools without explicit direction
-- Do not introduce new abstractions to “clean things up”
-- Do not change behavior unless explicitly requested
+Tool UIs may use any of the following, depending on need:
 
-If something looks imperfect but works and respects the rules, leave it alone.
+- WPF
+- WebView2
+- Minimal or static HTML
+- No UI at all
+
+Tool UI choices are not standardized,
+as long as they do not violate global architectural invariants
+or Core dependency rules.
 
 ---
 
-## Anti-Patterns (Hard No)
+## 7. ClickUp Integration Rules
 
-Do NOT build:
+- ClickUp Desktop runtime integration is first-class.
+- Runtime integration is preferred for UI-related state and interaction.
+- ClickUp API access is complementary or fallback.
+- Exactly one ClickUp API service exists in Core.
+- Raw HTTP access only.
+- No feature-specific methods in the API layer.
+- No business interpretation inside the API service.
+- Personal ClickUp API tokens only.
+- Tokens are stored via Windows Credential Manager.
+- OAuth is explicitly out of scope.
+
+---
+
+## 8. Development Discipline
+
+- Do not refactor code unless explicitly instructed.
+- Do not rename files, folders, or classes “for clarity”.
+- Do not move code between Core and Tools without explicit direction.
+- Do not introduce abstractions to “clean things up”.
+- Do not change behavior unless explicitly requested.
+
+If something works and respects these rules, it must be left alone.
+
+---
+
+## 9. Anti-Patterns (Hard No)
+
+Do not build:
+
 - Plugin frameworks
 - Dynamic plugin loading
-- Abstraction layers for hypothetical future tools
 - Event buses or mediator patterns
+- Abstraction layers for hypothetical future tools
 - OAuth flows
 - Enterprise-style configuration systems
 
-Do NOT put in Core:
+Do not put in Core:
+
 - Feature-specific business logic
 - Tool-specific behavior
 - Tool-specific interpretation of configuration
@@ -241,16 +221,18 @@ Do NOT put in Core:
 
 ---
 
-## Project Boundaries
+## 10. Project Boundaries
 
 This project is:
+
 - A ClickUp-centric desktop companion
 - Modular and intentionally simple
-- Power-user focused and experimental
+- Power-user focused
+- Experimental and internally driven
 
-This project is NOT:
-- A real Windows taskbar extension
-- A shell or Explorer integration
+This project is not:
+
+- A Windows shell or taskbar extension
 - An official ClickUp client
 - A plugin framework
 - A commercial product
@@ -259,6 +241,7 @@ This project is NOT:
 
 ## Source of Truth
 
-This file is the source of truth for architecture and development behavior.
+This document is the single source of truth for architecture and development behavior.
 
-If an implementation decision is not supported by this document, it must not be made.
+If an implementation decision is not supported by this document,
+it must not be made.
