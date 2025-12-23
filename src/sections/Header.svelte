@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { appState } from '../lib/state';
-    import { sendMessage } from '../lib/bridge';
-    import { getClickUpBadge, getApiBadge, getUptimeBadge } from '../lib/status';
+    import { appState } from '$lib/state';
+    import { sendMessage } from '$lib/bridge';
+    import { getClickUpBadge, getApiBadge, getUptimeBadge } from '$lib/status';
     import { Button } from '$lib/components/ui/button';
     import { Badge } from '$lib/components/ui/badge';
-    import type { BadgeVariant as StatusBadgeVariant } from '../lib/status';
+    import type { BadgeVariant as StatusBadgeVariant } from '$lib/status';
 
     function handleRefreshRuntimeStatus(): void {
         sendMessage('refresh-runtime-status');

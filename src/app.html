@@ -3,6 +3,16 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			// CRITICAL: Redirect /index.html to / before SvelteKit starts
+			// WebView2 navigates to /index.html (because / gives ERR_ACCESS_DENIED),
+			// but SvelteKit only has a route for /. This redirect must run synchronously
+			// before SvelteKit initializes, otherwise SvelteKit will try to match /index.html
+			// as a route and return 404.
+			if (window.location.pathname === '/index.html') {
+				window.history.replaceState({}, '', '/');
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

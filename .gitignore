@@ -40,8 +40,5 @@ yarn-debug.log*
 yarn-error.log*
 .svelte-kit/
 
-# Build output in wwwroot (generated files)
-wwwroot/index.html
-wwwroot/assets/
-wwwroot/*.js
-wwwroot/*.css
+# Build output in wwwroot (100% generated - do not edit)
+wwwroot/

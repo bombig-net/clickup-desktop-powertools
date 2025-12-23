@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { appState } from '../lib/state';
-    import { sendMessage } from '../lib/bridge';
+    import { appState } from '$lib/state';
+    import { sendMessage } from '$lib/bridge';
     import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
     import { Switch } from '$lib/components/ui/switch';
     import { Input } from '$lib/components/ui/input';

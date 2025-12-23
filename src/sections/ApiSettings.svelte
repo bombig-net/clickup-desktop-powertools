@@ -1,13 +1,14 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { appState } from '../lib/state';
-    import { sendMessage, onMessage, offMessage } from '../lib/bridge';
-    import { getTokenStatus } from '../lib/status';
+    import { appState } from '$lib/state';
+    import { sendMessage, onMessage, offMessage } from '$lib/bridge';
+    import { getTokenStatus } from '$lib/status';
     import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
     import { Input } from '$lib/components/ui/input';
     import { Button } from '$lib/components/ui/button';
     import { Alert } from '$lib/components/ui/alert';
     import { Label } from '$lib/components/ui/label';
+    import { getStatusColorClass } from '$lib/utils';
 
     let tokenInput = '';
     let userEditingToken = false;
@@ -131,11 +132,7 @@
             <div class="flex justify-between items-center py-2 border-b border-border">
                 <span class="text-sm text-muted-foreground">Status</span>
                 <span id="token-status" 
-                      class="text-sm font-medium
-                             {tokenStatus.variant === 'valid' ? 'text-green-400' : ''}
-                             {tokenStatus.variant === 'invalid' ? 'text-red-400' : ''}
-                             {tokenStatus.variant === 'untested' ? 'text-yellow-400' : ''}
-                             {tokenStatus.variant === 'none' ? 'text-muted-foreground' : ''}">
+                      class="text-sm font-medium {getStatusColorClass(tokenStatus.variant)}">
                     {tokenStatus.text}
                 </span>
             </div>

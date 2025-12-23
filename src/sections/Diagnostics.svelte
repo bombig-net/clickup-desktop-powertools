@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { appState } from '../lib/state';
-    import { sendMessage } from '../lib/bridge';
-    import { getClickUpStatus } from '../lib/status';
+    import { appState } from '$lib/state';
+    import { sendMessage } from '$lib/bridge';
+    import { getClickUpStatus } from '$lib/status';
     import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
     import { Button } from '$lib/components/ui/button';
+    import { getStatusColorClass } from '$lib/utils';
 
     function handleRefreshRuntimeStatus(): void {
         sendMessage('refresh-runtime-status');
@@ -39,10 +40,7 @@
                 <span class="text-sm text-muted-foreground">ClickUp Desktop</span>
                 <div class="flex items-center gap-2">
                     <span id="clickup-desktop-status" 
-                          class="text-sm font-medium
-                                 {clickUpStatus.variant === 'valid' ? 'text-green-400' : ''}
-                                 {clickUpStatus.variant === 'untested' ? 'text-yellow-400' : ''}
-                                 {clickUpStatus.variant === 'none' ? 'text-muted-foreground' : ''}">
+                          class="text-sm font-medium {getStatusColorClass(clickUpStatus.variant)}">
                         {clickUpStatus.text}
                     </span>
                     <Button 

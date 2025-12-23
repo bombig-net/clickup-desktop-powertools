@@ -1,14 +1,14 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { appState } from '../../lib/state';
-    import { sendMessage, onMessage, offMessage } from '../../lib/bridge';
+    import { appState } from '$lib/state';
+    import { sendMessage, onMessage, offMessage } from '$lib/bridge';
     import { Switch } from '$lib/components/ui/switch';
     import { Textarea } from '$lib/components/ui/textarea';
     import { Button } from '$lib/components/ui/button';
     import { Label } from '$lib/components/ui/label';
     import { Alert } from '$lib/components/ui/alert';
     import { Badge } from '$lib/components/ui/badge';
-    import type { Tool } from '../../lib/state';
+    import type { Tool } from '$lib/state';
 
     export let tool: Tool;
     

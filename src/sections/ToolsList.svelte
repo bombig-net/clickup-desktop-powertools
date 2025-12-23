@@ -1,12 +1,12 @@
 <script lang="ts">
     import { onDestroy } from 'svelte';
-    import { appState } from '../lib/state';
-    import { sendMessage } from '../lib/bridge';
+    import { appState } from '$lib/state';
+    import { sendMessage } from '$lib/bridge';
     import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
-    import CustomCssJsTool from '../components/tools/CustomCssJsTool.svelte';
-    import DebugInspectorTool from '../components/tools/DebugInspectorTool.svelte';
+    import CustomCssJsTool from '../sections/tools/CustomCssJsTool.svelte';
+    import DebugInspectorTool from '../sections/tools/DebugInspectorTool.svelte';
     import { Switch } from '$lib/components/ui/switch';
-    import type { Tool } from '../lib/state';
+    import type { Tool } from '$lib/state';
 
     let debugInspectorTimeout: ReturnType<typeof setTimeout> | null = null;
     let accordionValue: string | undefined = undefined;

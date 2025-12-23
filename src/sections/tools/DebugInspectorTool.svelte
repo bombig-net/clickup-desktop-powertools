@@ -1,7 +1,8 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { sendMessage, onMessage, offMessage } from '../../lib/bridge';
+    import { sendMessage, onMessage, offMessage } from '$lib/bridge';
     import { Button } from '$lib/components/ui/button';
+    import { getStatusColorClass } from '$lib/utils';
 
     let connectionState = '-';
     let lastKnownUrl = '-';
@@ -11,9 +12,9 @@
     let recentNavigations: string[] = [];
 
     function getConnectionStateClass(state: string): string {
-        if (state === 'Connected') return 'text-green-400';
-        if (state === 'Failed') return 'text-red-400';
-        return 'text-yellow-400';
+        if (state === 'Connected') return getStatusColorClass('valid');
+        if (state === 'Failed') return getStatusColorClass('invalid');
+        return getStatusColorClass('untested');
     }
 
     function getPortAvailableText(available: boolean | null): string {
@@ -23,9 +24,9 @@
     }
 
     function getPortAvailableClass(available: boolean | null): string {
-        if (available === true) return 'text-green-400';
-        if (available === false) return 'text-red-400';
-        return 'text-yellow-400';
+        if (available === true) return getStatusColorClass('valid');
+        if (available === false) return getStatusColorClass('invalid');
+        return getStatusColorClass('untested');
     }
 
     function handleDebugInspectorState(payload: unknown): void {

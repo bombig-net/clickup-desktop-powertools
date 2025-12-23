@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { appState, updateState } from '../lib/state';
-    import { sendMessage, onMessage, offMessage, init } from '../lib/bridge';
+    import { appState, updateState } from '$lib/state';
+    import { sendMessage, onMessage, offMessage, init } from '$lib/bridge';
     import Header from '../sections/Header.svelte';
     import ToolsList from '../sections/ToolsList.svelte';
     import ApiSettings from '../sections/ApiSettings.svelte';
