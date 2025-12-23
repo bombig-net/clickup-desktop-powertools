@@ -10,46 +10,25 @@
     <div class="container">
         <header>
             <h1>ClickUp Desktop PowerTools</h1>
+            <p class="intro">System companion for ClickUp Desktop</p>
+            <div class="status-badges">
+                <span class="badge" id="badge-clickup">ClickUp</span>
+                <span class="badge" id="badge-api">API</span>
+                <span class="badge" id="badge-uptime">0m</span>
+            </div>
+            <button id="launch-debug-btn" class="btn btn-primary">
+                Launch ClickUp Debug
+            </button>
         </header>
         <main>
-            <section class="card">
-                <h2>Status</h2>
-                <div class="status-row">
-                    <span class="status-label">Version</span>
-                    <span class="status-value" id="version">1.0.0</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">.NET Runtime</span>
-                    <span class="status-value" id="dotnet-version">-</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">WebView2</span>
-                    <span class="status-value" id="webview2-version">-</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">ClickUp Desktop</span>
-                    <span class="status-value" id="clickup-desktop-status">-</span>
-                    <button id="refresh-runtime-btn" class="btn btn-small btn-secondary">Refresh</button>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Uptime</span>
-                    <span class="status-value" id="uptime">-</span>
-                </div>
-                <div class="status-row">
-                    <span class="status-label">Logs</span>
-                    <span class="status-value status-path" id="log-path">-</span>
-                    <button id="open-logs-btn" class="btn btn-small btn-secondary">Open</button>
-                </div>
-            </section>
-
-            <section class="card">
-                <h2>Tools</h2>
+            <details class="section" open>
+                <summary>Tools</summary>
                 <p class="card-description">Enable or disable PowerTools features.</p>
                 <div id="tools-list"></div>
-            </section>
+            </details>
 
-            <section class="card">
-                <h2>ClickUp API</h2>
+            <details class="section" open>
+                <summary>ClickUp API</summary>
                 <p class="card-description">Configure your personal ClickUp API token to enable PowerTools features.</p>
                 
                 <div class="form-group">
@@ -80,7 +59,67 @@
                     Get your API token from 
                     <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener">ClickUp Settings &rarr; Apps</a>
                 </p>
-            </section>
+            </details>
+
+            <details class="section">
+                <summary>System & Integration</summary>
+                
+                <div class="option-row">
+                    <span>Start with Windows</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="autostart-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="option-row">
+                    <span>ClickUp Location</span>
+                    <span id="clickup-path" class="status-path">-</span>
+                    <button id="open-clickup-btn" class="btn btn-small btn-secondary">Open</button>
+                    <button id="set-clickup-path-btn" class="btn btn-small btn-secondary">Set Path...</button>
+                </div>
+                
+                <div class="option-row">
+                    <span>Debug Port</span>
+                    <input type="number" id="debug-port-input" min="1024" max="65535" class="input-small">
+                    <button id="set-debug-port-btn" class="btn btn-small btn-secondary">Set</button>
+                </div>
+                
+                <div class="option-row">
+                    <span>Restart if Running</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="restart-if-running-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="help-text-small">Kill existing ClickUp before launching debug mode</span>
+                </div>
+            </details>
+
+            <details class="section">
+                <summary>Status & Diagnostics</summary>
+                <div class="status-row">
+                    <span class="status-label">Version</span>
+                    <span class="status-value" id="version">1.0.0</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">.NET Runtime</span>
+                    <span class="status-value" id="dotnet-version">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">WebView2</span>
+                    <span class="status-value" id="webview2-version">-</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">ClickUp Desktop</span>
+                    <span class="status-value" id="clickup-desktop-status">-</span>
+                    <button id="refresh-runtime-btn" class="btn btn-small btn-secondary">Refresh</button>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">Logs</span>
+                    <span class="status-value status-path" id="log-path">-</span>
+                    <button id="open-logs-btn" class="btn btn-small btn-secondary">Open</button>
+                </div>
+            </details>
         </main>
         <footer>
             <p>PowerTools is experimental and intended for power users.</p>
@@ -89,4 +128,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-

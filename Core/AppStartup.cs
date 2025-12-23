@@ -13,6 +13,8 @@ public class AppStartup
     private ClickUpApi? _clickUpApi;
     private ClickUpRuntime? _clickUpRuntime;
     private CoreState? _coreState;
+    private SystemIntegration? _systemIntegration;
+    private SystemIntegrationSettings? _systemIntegrationSettings;
 
     public AppStartup(ILoggerFactory loggerFactory)
     {
@@ -32,6 +34,11 @@ public class AppStartup
         // Create runtime detection
         _clickUpRuntime = new ClickUpRuntime(_loggerFactory.CreateLogger<ClickUpRuntime>());
 
+        // Load system integration settings and create integration
+        _systemIntegrationSettings = SystemIntegrationSettings.Load();
+        _systemIntegration = new SystemIntegration(
+            _loggerFactory.CreateLogger<SystemIntegration>());
+
         // Compute log file path (matches SimpleFileLoggerProvider)
         var logFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -42,14 +49,17 @@ public class AppStartup
         {
             HasApiToken = !string.IsNullOrEmpty(_tokenStorage.GetToken()),
             LogFilePath = logFilePath,
-            ClickUpDesktopStatus = _clickUpRuntime.CheckStatus()
+            ClickUpDesktopStatus = _clickUpRuntime.CheckStatus(),
+            ClickUpInstallPath = _systemIntegration.ResolveClickUpInstallPath(_systemIntegrationSettings),
+            AutostartEnabled = _systemIntegration.ReadAutostartEnabled()
         };
 
         _logger.LogInformation("Core version: {Version}, .NET: {DotNet}, ClickUp Desktop: {Status}",
             _coreState.Version, _coreState.DotNetVersion, _coreState.ClickUpDesktopStatus);
 
         // Initialize tray host with dependencies
-        _trayHost = new TrayHost(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _loggerFactory);
+        _trayHost = new TrayHost(_tokenStorage, _clickUpApi, _coreState, 
+            _clickUpRuntime, _systemIntegration, _systemIntegrationSettings, _loggerFactory);
         _trayHost.Initialize();
 
         _logger.LogInformation("Tray host initialized");

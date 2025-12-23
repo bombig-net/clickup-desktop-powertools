@@ -19,6 +19,8 @@ public partial class ControlWindow : Window
     private readonly ClickUpApi _clickUpApi;
     private readonly CoreState _coreState;
     private readonly ClickUpRuntime _clickUpRuntime;
+    private readonly SystemIntegration _systemIntegration;
+    private readonly SystemIntegrationSettings _systemIntegrationSettings;
     private readonly ILogger<ControlWindow> _logger;
     private readonly ToolActivationSettings _toolActivation;
 
@@ -27,12 +29,14 @@ public partial class ControlWindow : Window
     private bool _webViewFailed = false;
     private bool _hasAttemptedReload = false;
 
-    public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, ILoggerFactory loggerFactory)
+    public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, ILoggerFactory loggerFactory)
     {
         _tokenStorage = tokenStorage;
         _clickUpApi = clickUpApi;
         _coreState = coreState;
         _clickUpRuntime = clickUpRuntime;
+        _systemIntegration = systemIntegration;
+        _systemIntegrationSettings = systemIntegrationSettings;
         _logger = loggerFactory.CreateLogger<ControlWindow>();
         _toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
 
@@ -206,6 +210,34 @@ public partial class ControlWindow : Window
                     HandleRefreshRuntimeStatus();
                     break;
 
+                case "launch-clickup-debug":
+                    HandleLaunchClickUpDebug();
+                    break;
+
+                case "set-autostart":
+                    HandleSetAutostart(message["payload"]);
+                    break;
+
+                case "open-clickup-location":
+                    HandleOpenClickUpLocation();
+                    break;
+
+                case "refresh-clickup-path":
+                    HandleRefreshClickUpPath();
+                    break;
+
+                case "set-clickup-path-override":
+                    HandleSetClickUpPathOverride(message["payload"]);
+                    break;
+
+                case "set-debug-port":
+                    HandleSetDebugPort(message["payload"]);
+                    break;
+
+                case "set-restart-if-running":
+                    HandleSetRestartIfRunning(message["payload"]);
+                    break;
+
                 default:
                     _logger.LogWarning("Unknown message type from WebUI: {Type}", messageType);
                     break;
@@ -311,6 +343,75 @@ public partial class ControlWindow : Window
         PushState();
     }
 
+    private void HandleLaunchClickUpDebug()
+    {
+        var (success, error) = _systemIntegration.LaunchClickUpDebugMode(
+            _coreState.ClickUpInstallPath,
+            _systemIntegrationSettings);
+        SendMessage("launch-result", new { success, error });
+        
+        // Refresh runtime status after short delay (process needs time to start)
+        if (success)
+        {
+            _ = System.Threading.Tasks.Task.Delay(2000).ContinueWith(_ =>
+                Dispatcher.Invoke(() => {
+                    _coreState.ClickUpDesktopStatus = _clickUpRuntime.CheckStatus();
+                    PushState();
+                }));
+        }
+    }
+
+    private void HandleSetAutostart(JsonNode? payload)
+    {
+        var enabled = payload?["enabled"]?.GetValue<bool>() ?? false;
+        if (_systemIntegration.SetAutostartEnabled(enabled))
+        {
+            _coreState.AutostartEnabled = enabled;
+        }
+        PushState();
+    }
+
+    private void HandleOpenClickUpLocation()
+    {
+        _systemIntegration.OpenFolder(_coreState.ClickUpInstallPath);
+    }
+
+    private void HandleRefreshClickUpPath()
+    {
+        _coreState.ClickUpInstallPath = _systemIntegration.ResolveClickUpInstallPath(_systemIntegrationSettings);
+        PushState();
+    }
+
+    private void HandleSetClickUpPathOverride(JsonNode? payload)
+    {
+        var path = payload?["path"]?.GetValue<string>();
+        _systemIntegrationSettings.ClickUpInstallPathOverride = string.IsNullOrWhiteSpace(path) ? null : path;
+        _systemIntegrationSettings.Save();
+        
+        // Re-resolve path
+        _coreState.ClickUpInstallPath = _systemIntegration.ResolveClickUpInstallPath(_systemIntegrationSettings);
+        PushState();
+    }
+
+    private void HandleSetDebugPort(JsonNode? payload)
+    {
+        var port = payload?["port"]?.GetValue<int>() ?? 9222;
+        if (port >= 1024 && port <= 65535)
+        {
+            _systemIntegrationSettings.DebugPort = port;
+            _systemIntegrationSettings.Save();
+            PushState();
+        }
+    }
+
+    private void HandleSetRestartIfRunning(JsonNode? payload)
+    {
+        var enabled = payload?["enabled"]?.GetValue<bool>() ?? false;
+        _systemIntegrationSettings.RestartIfRunning = enabled;
+        _systemIntegrationSettings.Save();
+        PushState();
+    }
+
     private void PushState()
     {
         // Calculate uptime
@@ -329,6 +430,11 @@ public partial class ControlWindow : Window
             clickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
             hasApiToken = _coreState.HasApiToken,
             tokenValid = _coreState.TokenValid,
+            clickUpInstallPath = _coreState.ClickUpInstallPath,
+            clickUpInstallPathOverride = _systemIntegrationSettings.ClickUpInstallPathOverride,
+            debugPort = _systemIntegrationSettings.DebugPort,
+            restartIfRunning = _systemIntegrationSettings.RestartIfRunning,
+            autostartEnabled = _coreState.AutostartEnabled,
             tools = ToolRegistry.Tools.Select(t => new
             {
                 id = t.Id,

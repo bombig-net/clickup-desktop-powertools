@@ -12,18 +12,22 @@ public class TrayHost : IDisposable
     private readonly ClickUpApi _clickUpApi;
     private readonly CoreState _coreState;
     private readonly ClickUpRuntime _clickUpRuntime;
+    private readonly SystemIntegration _systemIntegration;
+    private readonly SystemIntegrationSettings _systemIntegrationSettings;
     private readonly ILoggerFactory _loggerFactory;
 
     private TaskbarIcon? _taskbarIcon;
     private ControlWindow? _controlWindow;
     private bool _disposed;
 
-    public TrayHost(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, ILoggerFactory loggerFactory)
+    public TrayHost(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, ILoggerFactory loggerFactory)
     {
         _tokenStorage = tokenStorage;
         _clickUpApi = clickUpApi;
         _coreState = coreState;
         _clickUpRuntime = clickUpRuntime;
+        _systemIntegration = systemIntegration;
+        _systemIntegrationSettings = systemIntegrationSettings;
         _loggerFactory = loggerFactory;
     }
 
@@ -74,7 +78,7 @@ public class TrayHost : IDisposable
     {
         if (_controlWindow == null)
         {
-            _controlWindow = new ControlWindow(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _loggerFactory);
+            _controlWindow = new ControlWindow(_tokenStorage, _clickUpApi, _coreState, _clickUpRuntime, _systemIntegration, _systemIntegrationSettings, _loggerFactory);
         }
 
         if (_controlWindow.IsVisible)

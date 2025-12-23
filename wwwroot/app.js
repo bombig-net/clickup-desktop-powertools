@@ -15,6 +15,11 @@
         clickUpDesktopStatus: '',
         hasApiToken: false,
         tokenValid: null,
+        clickUpInstallPath: null,
+        clickUpInstallPathOverride: null,
+        debugPort: 9222,
+        restartIfRunning: false,
+        autostartEnabled: false,
         tools: []
     };
 
@@ -66,6 +71,7 @@
         // Register core message handlers
         onMessage('state-changed', handleStateChanged);
         onMessage('test-result', handleTestResult);
+        onMessage('launch-result', handleLaunchResult);
 
         // Request initial state
         sendMessage('get-state');
@@ -75,6 +81,49 @@
     function handleStateChanged(payload) {
         state = payload;
         updateUI();
+    }
+
+    // Handle launch result
+    function handleLaunchResult(payload) {
+        if (!payload.success) {
+            showToast(payload.error || 'Failed to launch ClickUp', 'error');
+        }
+    }
+
+    // Simple toast notification
+    function showToast(message, type) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type || 'info'}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 0.75rem 1rem;
+            background: ${type === 'error' ? 'rgba(248, 113, 113, 0.9)' : 'rgba(125, 211, 252, 0.9)'};
+            color: ${type === 'error' ? '#fff' : '#0f172a'};
+            border-radius: 6px;
+            font-size: 0.875rem;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Update badge
+    function updateBadge(id, statusClass, text) {
+        const badge = document.getElementById(id);
+        if (badge) {
+            badge.textContent = text;
+            badge.className = `badge ${statusClass ? 'status-' + statusClass : ''}`;
+        }
     }
 
     // Handle API token test result
@@ -144,6 +193,19 @@
             uptimeEl.textContent = state.uptime || '-';
         }
 
+        // Update status badges
+        updateBadge('badge-clickup', 
+            state.clickUpDesktopStatus === 'Running' ? 'valid' : 'none',
+            state.clickUpDesktopStatus === 'Running' ? 'Running' : 'Not Running');
+
+        updateBadge('badge-api',
+            state.tokenValid === true ? 'valid' : 
+            state.tokenValid === false ? 'invalid' : 
+            state.hasApiToken ? 'untested' : 'none',
+            state.hasApiToken ? (state.tokenValid ? 'Valid' : 'Configured') : 'No Token');
+
+        updateBadge('badge-uptime', null, state.uptime || '0m');
+
         const logPathEl = document.getElementById('log-path');
         if (logPathEl) {
             logPathEl.textContent = state.logFilePath || '-';
@@ -199,6 +261,42 @@
 
         if (clearBtn) {
             clearBtn.disabled = !state.hasApiToken;
+        }
+
+        // Launch button - disabled if no ClickUp path
+        const launchBtn = document.getElementById('launch-debug-btn');
+        if (launchBtn) {
+            launchBtn.disabled = !state.clickUpInstallPath;
+            launchBtn.title = state.clickUpInstallPath 
+                ? 'Launch ClickUp with remote debugging enabled'
+                : 'ClickUp Desktop not found';
+        }
+
+        // ClickUp path display
+        const pathEl = document.getElementById('clickup-path');
+        if (pathEl) {
+            pathEl.textContent = state.clickUpInstallPath || '-';
+            pathEl.title = state.clickUpInstallPathOverride 
+                ? `Configured: ${state.clickUpInstallPathOverride}` 
+                : (state.clickUpInstallPath ? 'Auto-detected' : 'Not found');
+        }
+
+        // Debug port
+        const portInput = document.getElementById('debug-port-input');
+        if (portInput) {
+            portInput.value = state.debugPort || 9222;
+        }
+
+        // Restart if running
+        const restartToggle = document.getElementById('restart-if-running-toggle');
+        if (restartToggle) {
+            restartToggle.checked = state.restartIfRunning || false;
+        }
+
+        // Autostart toggle
+        const autostartToggle = document.getElementById('autostart-toggle');
+        if (autostartToggle) {
+            autostartToggle.checked = state.autostartEnabled || false;
         }
     }
 
@@ -336,6 +434,61 @@
         const refreshRuntimeBtn = document.getElementById('refresh-runtime-btn');
         if (refreshRuntimeBtn) {
             refreshRuntimeBtn.addEventListener('click', handleRefreshRuntimeStatus);
+        }
+
+        // Launch debug button
+        const launchBtn = document.getElementById('launch-debug-btn');
+        if (launchBtn) {
+            launchBtn.addEventListener('click', () => {
+                sendMessage('launch-clickup-debug');
+            });
+        }
+
+        // Autostart toggle
+        const autostartToggle = document.getElementById('autostart-toggle');
+        if (autostartToggle) {
+            autostartToggle.addEventListener('change', (e) => {
+                sendMessage('set-autostart', { enabled: e.target.checked });
+            });
+        }
+
+        // Open ClickUp location
+        const openClickUpBtn = document.getElementById('open-clickup-btn');
+        if (openClickUpBtn) {
+            openClickUpBtn.addEventListener('click', () => {
+                sendMessage('open-clickup-location');
+            });
+        }
+
+        // Set ClickUp path override
+        const setClickUpPathBtn = document.getElementById('set-clickup-path-btn');
+        if (setClickUpPathBtn) {
+            setClickUpPathBtn.addEventListener('click', () => {
+                const path = prompt('Enter ClickUp executable path:', state.clickUpInstallPathOverride || '');
+                if (path !== null) {
+                    sendMessage('set-clickup-path-override', { path: path.trim() || null });
+                }
+            });
+        }
+
+        // Set debug port
+        const setDebugPortBtn = document.getElementById('set-debug-port-btn');
+        if (setDebugPortBtn) {
+            setDebugPortBtn.addEventListener('click', () => {
+                const portInput = document.getElementById('debug-port-input');
+                const port = parseInt(portInput?.value || '9222', 10);
+                if (port >= 1024 && port <= 65535) {
+                    sendMessage('set-debug-port', { port });
+                }
+            });
+        }
+
+        // Restart if running toggle
+        const restartToggle = document.getElementById('restart-if-running-toggle');
+        if (restartToggle) {
+            restartToggle.addEventListener('change', (e) => {
+                sendMessage('set-restart-if-running', { enabled: e.target.checked });
+            });
         }
     }
 

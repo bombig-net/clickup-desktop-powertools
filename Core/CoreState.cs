@@ -20,5 +20,9 @@ public class CoreState
 
     // Runtime bridge status (mutable)
     public ClickUpDesktopStatus ClickUpDesktopStatus { get; set; } = ClickUpDesktopStatus.Unknown;
+
+    // System integration state (derived at startup, refreshable)
+    public string? ClickUpInstallPath { get; set; }  // Resolved path (override or auto-detected)
+    public bool AutostartEnabled { get; set; }
 }
 
