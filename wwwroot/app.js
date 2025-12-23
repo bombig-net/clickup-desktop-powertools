@@ -440,6 +440,14 @@
         const toolsContainer = document.getElementById('tools-container');
         if (!toolsContainer) return;
 
+        // Collect open state BEFORE clearing
+        const openToolIds = new Set();
+        toolsContainer.querySelectorAll('details[data-tool-id]').forEach(details => {
+            if (details.open) {
+                openToolIds.add(details.getAttribute('data-tool-id'));
+            }
+        });
+
         // Clear existing
         toolsContainer.innerHTML = '';
 
@@ -452,6 +460,7 @@
             // Create details element (collapsible section)
             const details = document.createElement('details');
             details.className = 'section';
+            details.setAttribute('data-tool-id', tool.id);
             
             // Summary (tool name)
             const summary = document.createElement('summary');
@@ -509,6 +518,14 @@
             }
 
             toolsContainer.appendChild(details);
+        });
+
+        // Restore open state AFTER all tools are appended
+        openToolIds.forEach(toolId => {
+            const details = toolsContainer.querySelector(`details[data-tool-id="${toolId}"]`);
+            if (details) {
+                details.open = true;
+            }
         });
     }
 
