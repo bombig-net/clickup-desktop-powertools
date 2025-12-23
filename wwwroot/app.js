@@ -185,14 +185,28 @@
 
         const clickUpStatusEl = document.getElementById('clickup-desktop-status');
         if (clickUpStatusEl) {
-            const status = state.clickUpDesktopStatus;
-            clickUpStatusEl.textContent = status || '-';
-            clickUpStatusEl.className = 'status-value';
-            if (status === 'Running') {
-                clickUpStatusEl.classList.add('status-valid');
-            } else if (status === 'NotRunning') {
-                clickUpStatusEl.classList.add('status-none');
+            // Use same logic as badge for consistency
+            let statusText = '';
+            let statusClass = 'status-value';
+            
+            if (state.clickUpDesktopStatus === 'Running') {
+                if (state.clickUpDebugPortAvailable === true) {
+                    statusText = 'Running (Debug Ready)';
+                    statusClass += ' status-valid';
+                } else if (state.clickUpDebugPortAvailable === false) {
+                    statusText = 'Running (No Debug)';
+                    statusClass += ' status-untested';
+                } else {
+                    statusText = 'Running (Unknown)';
+                    statusClass += ' status-untested';
+                }
+            } else {
+                statusText = 'Not Running';
+                statusClass += ' status-none';
             }
+            
+            clickUpStatusEl.textContent = statusText;
+            clickUpStatusEl.className = statusClass;
         }
 
         const uptimeEl = document.getElementById('uptime');
@@ -403,6 +417,10 @@
 
     function handleRefreshRuntimeStatus() {
         sendMessage('refresh-runtime-status');
+        // Also test API token if one is configured
+        if (state.hasApiToken) {
+            sendMessage('test-api-token');
+        }
     }
 
     function handleToolToggle(toolId, enabled) {
@@ -507,6 +525,12 @@
         const refreshRuntimeBtn = document.getElementById('refresh-runtime-btn');
         if (refreshRuntimeBtn) {
             refreshRuntimeBtn.addEventListener('click', handleRefreshRuntimeStatus);
+        }
+
+        // Header refresh button
+        const headerRefreshBtn = document.getElementById('header-refresh-btn');
+        if (headerRefreshBtn) {
+            headerRefreshBtn.addEventListener('click', handleRefreshRuntimeStatus);
         }
 
         // Launch debug button

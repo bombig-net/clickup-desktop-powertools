@@ -61,8 +61,13 @@ header h1 {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
+    align-items: center;
     margin-bottom: 1rem;
     flex-wrap: wrap;
+}
+
+.status-badges .btn {
+    margin: 0;
 }
 
 .badge {
