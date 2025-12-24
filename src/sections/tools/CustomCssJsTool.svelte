@@ -14,6 +14,8 @@
     import Save from '@lucide/svelte/icons/save';
     import FileCode from '@lucide/svelte/icons/file-code';
     import Code from '@lucide/svelte/icons/code';
+    import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
+    import Info from '@lucide/svelte/icons/info';
 
     export let tool: Tool;
     
@@ -27,6 +29,10 @@
     let lastError: string | null = null;
     let showStatus = false;
     let cssJsStateTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    // Reactive character counts
+    $: cssCharCount = cssContent.length;
+    $: jsCharCount = jsContent.length;
 
     function handleSave(): void {
         if (!currentTool.enabled) return;
@@ -149,11 +155,14 @@
         <Textarea 
             id="css-input-custom-css-js"
             bind:value={cssContent}
-            placeholder="/* Enter custom CSS here */"
+            placeholder="/* Enter custom CSS here. Applied on navigation. */"
             rows={5}
             disabled={!currentTool.enabled}
             class="w-full font-mono resize-y min-h-[100px]"
             oninput={handleCssInput} />
+        {#if cssCharCount > 0}
+            <p class="text-xs text-muted-foreground mt-1">{cssCharCount.toLocaleString()} characters</p>
+        {/if}
     </div>
 
     <div>
@@ -164,15 +173,39 @@
         <Textarea 
             id="js-input-css-js"
             bind:value={jsContent}
-            placeholder="// Enter custom JavaScript here"
+            placeholder="// Enter custom JavaScript here. Executes on navigation."
             rows={5}
             disabled={!currentTool.enabled}
             class="w-full font-mono resize-y min-h-[100px]"
             oninput={handleJsInput} />
+        {#if jsCharCount > 0}
+            <p class="text-xs text-muted-foreground mt-1">{jsCharCount.toLocaleString()} characters</p>
+        {/if}
     </div>
 
     {#if !currentTool.enabled}
         <p class="text-xs text-muted-foreground">Enable tool to edit and apply custom CSS/JS</p>
+    {/if}
+
+    <!-- JavaScript Execution Warning -->
+    {#if jsContent.trim() && currentTool.enabled}
+        <Alert variant="destructive" className="mt-2">
+            <AlertTriangle class="size-4" />
+            <div>
+                <strong>JavaScript Execution Warning</strong>
+                <p class="text-sm mt-1">JavaScript code executes in the ClickUp app context. Only use code you trust. This can access your ClickUp data and modify the application behavior.</p>
+            </div>
+        </Alert>
+    {/if}
+
+    <!-- Execution Info for Power Users -->
+    {#if currentTool.enabled}
+        <Alert variant="default" className="mt-2">
+            <Info class="size-4" />
+            <div class="text-sm">
+                <strong>Execution Info:</strong> Code runs automatically on navigation (task/view changes). CSS persists, JavaScript re-executes. Rare duplicate executions may occur.
+            </div>
+        </Alert>
     {/if}
 
     <!-- Footer with Save button and status -->
