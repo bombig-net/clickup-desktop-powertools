@@ -456,7 +456,87 @@ public class RuntimeBridge : IDisposable
             }
 
             // No exception means success, even if value is null/undefined
-            var value = result["result"]?["value"]?.GetValue<string>();
+            // CDP returns values differently based on type:
+            // - Strings are returned as-is
+            // - Objects/arrays are returned as JSON strings when returnByValue=true
+            // - null/undefined are returned as null
+            
+            // Extract the result object from the CDP response
+            // CDP response structure: {"id": 1, "result": {"type": "string", "value": "..."}}
+            var resultNode = result?["result"];
+            string? value = null;
+            
+            if (resultNode != null)
+            {
+                // Try different ways to access the value
+                JsonNode? valueNode = null;
+                string? type = null;
+                
+                // Method 1: Direct property access on resultNode (which should be the inner result object)
+                if (resultNode is System.Text.Json.Nodes.JsonObject jsonObj)
+                {
+                    if (jsonObj.TryGetPropertyValue("value", out var directValueNode))
+                    {
+                        valueNode = directValueNode;
+                    }
+                    if (jsonObj.TryGetPropertyValue("type", out var typeNode))
+                    {
+                        type = typeNode?.GetValue<string>();
+                    }
+                }
+                
+                // Method 2: Indexer access (fallback)
+                if (valueNode == null)
+                {
+                    valueNode = resultNode["value"];
+                }
+                if (string.IsNullOrEmpty(type))
+                {
+                    type = resultNode["type"]?.GetValue<string>();
+                }
+                
+                // Method 3: If resultNode still has nested "result", extract it
+                if (valueNode == null && resultNode is System.Text.Json.Nodes.JsonObject jsonObjNested)
+                {
+                    if (jsonObjNested.TryGetPropertyValue("result", out var nestedResultNode))
+                    {
+                        // The resultNode itself contains another "result" property - extract from that
+                        if (nestedResultNode is System.Text.Json.Nodes.JsonObject nestedResultObj)
+                        {
+                            if (nestedResultObj.TryGetPropertyValue("value", out var nestedValueNode))
+                            {
+                                valueNode = nestedValueNode;
+                            }
+                            if (nestedResultObj.TryGetPropertyValue("type", out var nestedTypeNode))
+                            {
+                                type = nestedTypeNode?.GetValue<string>();
+                            }
+                        }
+                    }
+                }
+                
+                if (valueNode != null)
+                {
+                    // Try to get as string first (for JSON strings)
+                    if (valueNode.GetValueKind() == System.Text.Json.JsonValueKind.String)
+                    {
+                        value = valueNode.GetValue<string>();
+                    }
+                    // If it's an object/array, serialize it to JSON string
+                    else if (valueNode.GetValueKind() == System.Text.Json.JsonValueKind.Object || 
+                             valueNode.GetValueKind() == System.Text.Json.JsonValueKind.Array)
+                    {
+                        value = valueNode.ToJsonString();
+                    }
+                    // For null/undefined, value stays null
+                }
+                else if (type == "string" && resultNode is System.Text.Json.Nodes.JsonObject jsonObjStringFallback && jsonObjStringFallback.TryGetPropertyValue("value", out var stringValueNode))
+                {
+                    // Sometimes CDP returns strings differently
+                    value = stringValueNode?.GetValue<string>();
+                }
+            }
+            
             return new ScriptExecutionResult
             {
                 Success = true,
