@@ -133,7 +133,6 @@ public class CustomCssJsTool : IToolLifecycle
     function applyCSS() {{
         if (!cssContent) return;
         try {{
-            console.log('[ClickUp PowerTools] Applying CSS at', new Date().toISOString());
             var existingStyle = document.getElementById(styleId);
             if (existingStyle) {{
                 existingStyle.remove();
@@ -143,18 +142,16 @@ public class CustomCssJsTool : IToolLifecycle
             style.textContent = cssContent;
             if (document.head) {{
                 document.head.appendChild(style);
-                console.log('[ClickUp PowerTools] CSS style tag added to head');
             }} else {{
                 // Wait for head to be available
                 setTimeout(function() {{
                     if (document.head) {{
                         document.head.appendChild(style);
-                        console.log('[ClickUp PowerTools] CSS style tag added to head (delayed)');
                     }}
                 }}, 50);
             }}
         }} catch (e) {{
-            console.error('ClickUp PowerTools CSS error:', e);
+            console.error('[ClickUp PowerTools] CSS error:', e);
         }}
     }}
     
@@ -166,11 +163,38 @@ public class CustomCssJsTool : IToolLifecycle
                 if (!window.__clickupPowertoolsNavigationQueue) {{
                     window.__clickupPowertoolsNavigationQueue = [];
                 }}
+                
+                // Track recently processed URLs independently of queue (queue gets cleared by C#)
+                if (!window.__clickupPowertoolsRecentNavigations) {{
+                    window.__clickupPowertoolsRecentNavigations = {{}};
+                }}
+                
+                var currentUrl = window.location.href;
+                var now = Date.now();
+                var dedupeWindow = 500; // 500ms window to prevent duplicates
+                
+                // Check if this URL was already processed recently (independent of queue)
+                var recentTimestamp = window.__clickupPowertoolsRecentNavigations[currentUrl];
+                if (recentTimestamp && (now - recentTimestamp) < dedupeWindow) {{
+                    return;
+                }}
+                
+                // Mark this URL as recently processed
+                window.__clickupPowertoolsRecentNavigations[currentUrl] = now;
+                
+                // Clean up old entries (older than dedupeWindow * 2 to prevent memory leak)
+                var cleanupThreshold = now - (dedupeWindow * 2);
+                for (var url in window.__clickupPowertoolsRecentNavigations) {{
+                    if (window.__clickupPowertoolsRecentNavigations[url] < cleanupThreshold) {{
+                        delete window.__clickupPowertoolsRecentNavigations[url];
+                    }}
+                }}
+                
+                // Add to queue for C# to process
                 window.__clickupPowertoolsNavigationQueue.push({{
-                    timestamp: Date.now(),
-                    url: window.location.href
+                    timestamp: now,
+                    url: currentUrl
                 }});
-                console.log('[ClickUp PowerTools] Navigation queued for C# at', new Date().toISOString(), 'URL:', window.location.href, 'Queue length:', window.__clickupPowertoolsNavigationQueue.length);
             }} catch (e) {{
                 console.error('[ClickUp PowerTools] Failed to signal navigation:', e);
             }}
@@ -178,13 +202,8 @@ public class CustomCssJsTool : IToolLifecycle
     }}
     
     function applyAll() {{
-        console.log('[ClickUp PowerTools] applyAll() called at', new Date().toISOString());
         applyCSS();
         signalNavigation();
-        // Log for debugging
-        try {{
-            console.log('[ClickUp PowerTools] Finished applying CSS and signaling navigation at', new Date().toISOString());
-        }} catch (e) {{}}
     }}
     
     // Wait for DOM to be ready, then apply
@@ -210,15 +229,9 @@ public class CustomCssJsTool : IToolLifecycle
             var currentPathname = window.location.pathname;
             if (currentUrl !== lastUrl || currentPathname !== lastPathname) {{
                 navigationCount++;
-                try {{
-                    console.log('[ClickUp PowerTools] NAVIGATION #' + navigationCount + ' detected: URL changed from', lastUrl, 'to', currentUrl);
-                    console.log('[ClickUp PowerTools] Pathname changed from', lastPathname, 'to', currentPathname);
-                }} catch (e) {{}}
                 lastUrl = currentUrl;
                 lastPathname = currentPathname;
-                console.log('[ClickUp PowerTools] Scheduling applyAll() due to URL change (navigation #' + navigationCount + ')');
                 setTimeout(function() {{
-                    console.log('[ClickUp PowerTools] Executing applyAll() after URL change timeout (navigation #' + navigationCount + ')');
                     applyAll();
                 }}, 200);
             }}
@@ -236,11 +249,7 @@ public class CustomCssJsTool : IToolLifecycle
                     }}
                 }}
                 if (shouldReapply) {{
-                    try {{
-                        console.log('[ClickUp PowerTools] DOM mutation detected, reapplying');
-                    }} catch (e) {{}}
                     setTimeout(function() {{
-                        console.log('[ClickUp PowerTools] Executing applyAll() after DOM mutation timeout');
                         applyAll();
                     }}, 200);
                 }}
@@ -266,11 +275,7 @@ public class CustomCssJsTool : IToolLifecycle
         
         // Also watch for popstate (back/forward navigation)
         window.addEventListener('popstate', function() {{
-            try {{
-                console.log('[ClickUp PowerTools] popstate event, reapplying');
-            }} catch (e) {{}}
             setTimeout(function() {{
-                console.log('[ClickUp PowerTools] Executing applyAll() after popstate timeout');
                 applyAll();
             }}, 200);
         }});
@@ -280,21 +285,13 @@ public class CustomCssJsTool : IToolLifecycle
         var originalReplaceState = history.replaceState;
         history.pushState = function() {{
             originalPushState.apply(history, arguments);
-            try {{
-                console.log('[ClickUp PowerTools] pushState called, reapplying');
-            }} catch (e) {{}}
             setTimeout(function() {{
-                console.log('[ClickUp PowerTools] Executing applyAll() after pushState timeout');
                 applyAll();
             }}, 200);
         }};
         history.replaceState = function() {{
             originalReplaceState.apply(history, arguments);
-            try {{
-                console.log('[ClickUp PowerTools] replaceState called, reapplying');
-            }} catch (e) {{}}
             setTimeout(function() {{
-                console.log('[ClickUp PowerTools] Executing applyAll() after replaceState timeout');
                 applyAll();
             }}, 200);
         }};
