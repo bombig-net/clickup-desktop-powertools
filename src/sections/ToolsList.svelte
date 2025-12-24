@@ -7,6 +7,10 @@
     import DebugInspectorTool from '../sections/tools/DebugInspectorTool.svelte';
     import { Switch } from '$lib/components/ui/switch';
     import type { Tool } from '$lib/state';
+    import FileCode from '@lucide/svelte/icons/file-code';
+    import Bug from '@lucide/svelte/icons/bug';
+    import Clock from '@lucide/svelte/icons/clock';
+    import Power from '@lucide/svelte/icons/power';
 
     let debugInspectorTimeout: ReturnType<typeof setTimeout> | null = null;
     let accordionValue: string | undefined = undefined;
@@ -36,37 +40,55 @@
             debugInspectorTimeout = null;
         }
     });
+
+    // Get icon for tool based on tool ID
+    function getToolIcon(toolId: string) {
+        if (toolId === 'custom-css-js') return FileCode;
+        if (toolId === 'debug-inspector') return Bug;
+        if (toolId === 'time-tracking') return Clock;
+        return null;
+    }
 </script>
 
-<div id="tools-container" class="mb-6">
-    <Accordion type="single" bind:value={accordionValue}>
+<div id="tools-container">
+    <Accordion type="single" bind:value={accordionValue} class="space-y-6">
         {#each $appState.tools || [] as tool (tool.id)}
             <AccordionItem value={tool.id} id="tool-{tool.id}" data-tool-id={tool.id}>
-                <AccordionTrigger class="font-semibold">
+                <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
+                    {#if getToolIcon(tool.id)}
+                        {@const ToolIcon = getToolIcon(tool.id)}
+                        <ToolIcon class="size-5" />
+                    {/if}
                     {tool.name}
                 </AccordionTrigger>
                 <AccordionContent>
-                    <p class="pb-5 text-sm text-muted-foreground">{tool.description}</p>
-                    
-                    {#if tool.id === 'custom-css-js'}
-                        <CustomCssJsTool {tool} />
-                    {:else if tool.id === 'debug-inspector'}
-                        <DebugInspectorTool />
-                    {:else}
-                        <!-- Generic tool enable toggle -->
-                        <div class="flex items-center gap-3 py-3 border-b border-border">
-                            <span class="flex-1 text-sm text-muted-foreground">Enable Tool</span>
-                            <Switch 
-                                checked={tool.enabled}
-                                onclick={() => {
-                                    if (tool.id === 'debug-inspector') {
-                                        handleDebugInspectorToggle(!tool.enabled);
-                                    } else {
-                                        handleToolToggle(tool.id, !tool.enabled);
-                                    }
-                                }} />
-                        </div>
-                    {/if}
+                    <div class="space-y-6 pt-2">
+                        <p class="text-sm text-muted-foreground">{tool.description}</p>
+                        
+                        {#if tool.id === 'custom-css-js'}
+                            <CustomCssJsTool {tool} />
+                        {:else if tool.id === 'debug-inspector'}
+                            <DebugInspectorTool />
+                        {:else}
+                            <!-- Generic tool enable toggle -->
+                            <div class="flex items-center gap-3 py-3">
+                                <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+                                    <Power class="size-4" />
+                                    Enable Tool
+                                </span>
+                                <Switch 
+                                    checked={tool.enabled}
+                                    semantic="positive"
+                                    onclick={() => {
+                                        if (tool.id === 'debug-inspector') {
+                                            handleDebugInspectorToggle(!tool.enabled);
+                                        } else {
+                                            handleToolToggle(tool.id, !tool.enabled);
+                                        }
+                                    }} />
+                            </div>
+                        {/if}
+                    </div>
                 </AccordionContent>
             </AccordionItem>
         {/each}

@@ -8,7 +8,12 @@
     import { Label } from '$lib/components/ui/label';
     import { Alert } from '$lib/components/ui/alert';
     import { Badge } from '$lib/components/ui/badge';
+    import { getStatusDotClass } from '$lib/utils';
     import type { Tool } from '$lib/state';
+    import Power from '@lucide/svelte/icons/power';
+    import Save from '@lucide/svelte/icons/save';
+    import FileCode from '@lucide/svelte/icons/file-code';
+    import Code from '@lucide/svelte/icons/code';
 
     export let tool: Tool;
     
@@ -122,49 +127,61 @@
 </script>
 
 <!-- Enable/disable toggle -->
-<div class="mt-4 pt-3 pb-4 border-b border-border">
+<div class="py-3">
     <div class="flex items-center gap-3">
-        <span class="flex-1 text-sm text-muted-foreground">Enable Tool</span>
+        <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+            <Power class="size-4" />
+            Enable Tool
+        </span>
         <Switch 
             checked={currentTool.enabled}
+            semantic="positive"
             onclick={() => handleToolToggle(!currentTool.enabled)} />
     </div>
 </div>
 
-<div class="mt-4">
-    <Label for="css-input-custom-css-js" class="block mb-2">Custom CSS</Label>
-    <Textarea 
-        id="css-input-custom-css-js"
-        bind:value={cssContent}
-        placeholder="/* Enter custom CSS here */"
-        rows={5}
-        disabled={!currentTool.enabled}
-        class="w-full font-mono resize-y min-h-[100px]"
-        oninput={handleCssInput} />
-</div>
+<div class="space-y-4">
+    <div>
+        <Label for="css-input-custom-css-js" class="block mb-2 flex items-center gap-2">
+            <FileCode class="size-4" />
+            Custom CSS
+        </Label>
+        <Textarea 
+            id="css-input-custom-css-js"
+            bind:value={cssContent}
+            placeholder="/* Enter custom CSS here */"
+            rows={5}
+            disabled={!currentTool.enabled}
+            class="w-full font-mono resize-y min-h-[100px]"
+            oninput={handleCssInput} />
+    </div>
 
-<div class="mt-4">
-    <Label for="js-input-custom-css-js" class="block mb-2">Custom JavaScript</Label>
-    <Textarea 
-        id="js-input-css-js"
-        bind:value={jsContent}
-        placeholder="// Enter custom JavaScript here"
-        rows={5}
-        disabled={!currentTool.enabled}
-        class="w-full font-mono resize-y min-h-[100px]"
-        oninput={handleJsInput} />
-</div>
+    <div>
+        <Label for="js-input-custom-css-js" class="block mb-2 flex items-center gap-2">
+            <Code class="size-4" />
+            Custom JavaScript
+        </Label>
+        <Textarea 
+            id="js-input-css-js"
+            bind:value={jsContent}
+            placeholder="// Enter custom JavaScript here"
+            rows={5}
+            disabled={!currentTool.enabled}
+            class="w-full font-mono resize-y min-h-[100px]"
+            oninput={handleJsInput} />
+    </div>
 
-{#if !currentTool.enabled}
-    <p class="text-xs text-muted-foreground mt-2">Enable tool to edit and apply custom CSS/JS</p>
-{/if}
+    {#if !currentTool.enabled}
+        <p class="text-xs text-muted-foreground">Enable tool to edit and apply custom CSS/JS</p>
+    {/if}
 
-<!-- Footer with Save button and status -->
-<div class="flex justify-between items-center gap-4 mt-4 pt-4 pb-4 border-t border-border">
+    <!-- Footer with Save button and status -->
+    <div class="flex justify-between items-center gap-4 pt-2">
     <Button 
         variant="outline"
         disabled={!currentTool.enabled}
         onclick={handleSave}>
+        <Save class="size-4" />
         Save & Apply
     </Button>
     
@@ -173,17 +190,22 @@
             <span class="text-sm text-muted-foreground">Last Injection</span>
             <Badge 
                 id="css-js-status-custom-css-js"
-                variant={lastError ? 'destructive' : (lastResult ? 'default' : 'outline')}>
+                variant="outline"
+                class="flex items-center gap-1.5">
                 {#if lastError}
+                    <span class={getStatusDotClass('invalid')}></span>
                     Error
                 {:else if lastResult}
+                    <span class={getStatusDotClass('valid')}></span>
                     {lastResult}
                 {:else}
+                    <span class={getStatusDotClass('none')}></span>
                     -
                 {/if}
             </Badge>
         </div>
     {/if}
+    </div>
 </div>
 
 {#if showStatus && lastError && currentTool.enabled}

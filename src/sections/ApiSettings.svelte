@@ -8,7 +8,13 @@
     import { Button } from '$lib/components/ui/button';
     import { Alert } from '$lib/components/ui/alert';
     import { Label } from '$lib/components/ui/label';
-    import { getStatusColorClass } from '$lib/utils';
+    import { getStatusDotClass } from '$lib/utils';
+    import Save from '@lucide/svelte/icons/save';
+    import TestTube from '@lucide/svelte/icons/test-tube';
+    import Trash2 from '@lucide/svelte/icons/trash-2';
+    import Key from '@lucide/svelte/icons/key';
+    import AlertCircle from '@lucide/svelte/icons/alert-circle';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
 
     let tokenInput = '';
     let userEditingToken = false;
@@ -17,7 +23,7 @@
     let tokenError = '';
     let showTokenError = false;
     let tokenErrorTimeout: ReturnType<typeof setTimeout> | null = null;
-    let accordionValue: string | undefined = 'api-settings';
+    let accordionValue: string | undefined = undefined;
 
     function handleTestResult(payload: unknown): void {
         const result = payload as { success?: boolean; error?: string };
@@ -96,74 +102,90 @@
 
 <Accordion type="single" bind:value={accordionValue}>
     <AccordionItem value="api-settings">
-        <AccordionTrigger class="font-semibold">
+        <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
+            <Key class="size-5" />
             ClickUp API
         </AccordionTrigger>
         <AccordionContent>
-            <p class="pt-4 pb-5 text-sm text-muted-foreground">Configure your personal ClickUp API token to enable PowerTools features.</p>
-        
-            <div class="mb-5">
-                <Label for="token-input" class="block mb-2">API Token</Label>
-                <div class="flex gap-2">
-                    <Input 
-                        type="password"
-                        id="token-input"
-                        bind:value={tokenInput}
-                        placeholder={tokenPlaceholder}
-                        autocomplete="off"
-                        spellcheck="false"
-                        class="flex-1"
-                        oninput={handleTokenInput}
-                        onkeydown={(e) => {
-                            if (e.key === 'Enter') {
-                                handleSaveToken();
-                            }
-                        }} />
+            <div class="space-y-6 pt-2">
+                <p class="text-sm text-muted-foreground text-balance">Configure your personal ClickUp API token to enable PowerTools features.</p>
+            
+                <div class="space-y-6">
+                    <div>
+                        <Label for="token-input" class="text-sm font-medium block mb-2 flex items-center gap-2">
+                            <Key class="size-4" />
+                            API Token
+                        </Label>
+                        <div class="flex gap-2">
+                            <Input 
+                                type="password"
+                                id="token-input"
+                                bind:value={tokenInput}
+                                placeholder={tokenPlaceholder}
+                                autocomplete="off"
+                                spellcheck="false"
+                                class="flex-1"
+                                oninput={handleTokenInput}
+                                onkeydown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleSaveToken();
+                                    }
+                                }} />
+                            <Button 
+                                id="save-btn" 
+                                variant="default"
+                                disabled={!tokenInput.trim()}
+                                onclick={handleSaveToken}>
+                                <Save class="size-4" />
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center py-3">
+                        <span class="text-sm text-muted-foreground">Status</span>
+                        <span id="token-status" 
+                              class="text-sm font-medium text-foreground flex items-center gap-1.5">
+                            <span class={getStatusDotClass(tokenStatus.variant)}></span>
+                            {tokenStatus.text}
+                        </span>
+                    </div>
+                </div>
+
+                {#if showTokenError}
+                    <Alert id="token-error" variant="destructive" className="mt-0">
+                        <AlertCircle class="size-4" />
+                        {tokenError}
+                    </Alert>
+                {/if}
+
+                <div class="flex gap-3">
                     <Button 
-                        id="save-btn" 
-                        variant="default"
-                        disabled={!tokenInput.trim()}
-                        onclick={handleSaveToken}>
-                        Save
+                        id="test-btn" 
+                        variant="outline"
+                        disabled={!$appState.hasApiToken || testButtonDisabled}
+                        onclick={handleTestToken}>
+                        <TestTube class="size-4" />
+                        {testButtonText}
+                    </Button>
+                    <Button 
+                        id="clear-btn" 
+                        variant="destructive"
+                        disabled={!$appState.hasApiToken}
+                        onclick={handleClearToken}>
+                        <Trash2 class="size-4" />
+                        Clear Token
                     </Button>
                 </div>
+
+                <p class="text-xs text-muted-foreground">
+                    Get your API token from 
+                    <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener" class="text-primary hover:underline flex items-center gap-1 inline-flex">
+                        ClickUp Settings → Apps
+                        <ExternalLink class="size-3" />
+                    </a>
+                </p>
             </div>
-
-            <div class="flex justify-between items-center py-2 border-b border-border">
-                <span class="text-sm text-muted-foreground">Status</span>
-                <span id="token-status" 
-                      class="text-sm font-medium {getStatusColorClass(tokenStatus.variant)}">
-                    {tokenStatus.text}
-                </span>
-            </div>
-
-            {#if showTokenError}
-                <Alert id="token-error" variant="destructive" className="mt-4">
-                    {tokenError}
-                </Alert>
-            {/if}
-
-            <div class="flex gap-3 mt-4">
-                <Button 
-                    id="test-btn" 
-                    variant="outline"
-                    disabled={!$appState.hasApiToken || testButtonDisabled}
-                    onclick={handleTestToken}>
-                    {testButtonText}
-                </Button>
-                <Button 
-                    id="clear-btn" 
-                    variant="destructive"
-                    disabled={!$appState.hasApiToken}
-                    onclick={handleClearToken}>
-                    Clear Token
-                </Button>
-            </div>
-
-            <p class="text-xs text-muted-foreground mt-4">
-                Get your API token from 
-                <a href="https://app.clickup.com/settings/apps" target="_blank" rel="noopener" class="text-primary hover:underline">ClickUp Settings → Apps</a>
-            </p>
         </AccordionContent>
     </AccordionItem>
 </Accordion>

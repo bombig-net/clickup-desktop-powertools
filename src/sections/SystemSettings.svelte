@@ -5,6 +5,13 @@
     import { Switch } from '$lib/components/ui/switch';
     import { Input } from '$lib/components/ui/input';
     import { Button } from '$lib/components/ui/button';
+    import Monitor from '@lucide/svelte/icons/monitor';
+    import FolderOpen from '@lucide/svelte/icons/folder-open';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
+    import Settings from '@lucide/svelte/icons/settings';
+    import Server from '@lucide/svelte/icons/server';
+    import Check from '@lucide/svelte/icons/check';
+    import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 
     let autostartEnabled = $appState.autostartEnabled;
     let restartIfRunning = $appState.restartIfRunning;
@@ -50,69 +57,89 @@
 
 <Accordion type="single" bind:value={accordionValue}>
     <AccordionItem value="system-settings">
-        <AccordionTrigger class="font-semibold">
+        <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
+            <Settings class="size-5" />
             System & Integration
         </AccordionTrigger>
         <AccordionContent>
-            <div class="flex items-center gap-3 py-3 border-b border-border">
-                <span class="flex-1 text-sm text-muted-foreground">Start with Windows</span>
-                <Switch 
-                    id="autostart-toggle"
-                    bind:checked={autostartEnabled}
-                    onclick={() => handleSetAutostart(autostartEnabled)} />
-            </div>
-            
-            <div class="flex items-center gap-3 py-3 border-b border-border">
-                <span class="flex-1 text-sm text-muted-foreground">ClickUp Location</span>
-                <span id="clickup-path" 
-                      class="text-xs font-mono text-muted-foreground max-w-[200px] truncate"
-                      title={$appState.clickUpInstallPathOverride 
-                          ? `Configured: ${$appState.clickUpInstallPathOverride}` 
-                          : ($appState.clickUpInstallPath ? 'Auto-detected' : 'Not found')}>
-                    {$appState.clickUpInstallPath || '-'}
-                </span>
-                <Button 
-                    id="open-clickup-btn" 
-                    variant="outline"
-                    size="sm"
-                    onclick={() => sendMessage('open-clickup-location')}>
-                    Open
-                </Button>
-                <Button 
-                    id="set-clickup-path-btn" 
-                    variant="outline"
-                    size="sm"
-                    onclick={handleSetClickUpPath}>
-                    Set Path...
-                </Button>
-            </div>
-            
-            <div class="flex items-center gap-3 py-3 border-b border-border">
-                <span class="flex-1 text-sm text-muted-foreground">Debug Port</span>
-                <Input 
-                    type="number"
-                    id="debug-port-input"
-                    bind:value={debugPort}
-                    oninput={handleDebugPortInput}
-                    min="1024" 
-                    max="65535" 
-                    class="w-24 text-center" />
-                <Button 
-                    id="set-debug-port-btn" 
-                    variant="outline"
-                    size="sm"
-                    onclick={handleSetDebugPort}>
-                    Set
-                </Button>
-            </div>
-            
-            <div class="flex items-center gap-3 py-3">
-                <span class="flex-1 text-sm text-muted-foreground">Restart if Running</span>
-                <Switch 
-                    id="restart-if-running-toggle"
-                    bind:checked={restartIfRunning}
-                    onclick={() => handleSetRestartIfRunning(restartIfRunning)} />
-                <span class="text-xs text-muted-foreground">Kill existing ClickUp before launching debug mode</span>
+            <div class="space-y-6 pt-2">
+                <p class="text-sm text-muted-foreground text-balance">Configure system integration settings and debug options.</p>
+                <div class="flex items-center gap-3 py-3">
+                    <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+                        <Monitor class="size-4" />
+                        Start with Windows
+                    </span>
+                    <Switch 
+                        id="autostart-toggle"
+                        bind:checked={autostartEnabled}
+                        semantic="positive"
+                        onclick={() => handleSetAutostart(autostartEnabled)} />
+                </div>
+                
+                <div class="flex items-center gap-3 py-3">
+                    <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+                        <FolderOpen class="size-4" />
+                        ClickUp Location
+                    </span>
+                    <span id="clickup-path" 
+                          class="text-xs font-mono text-muted-foreground max-w-[200px] truncate"
+                          title={$appState.clickUpInstallPathOverride 
+                              ? `Configured: ${$appState.clickUpInstallPathOverride}` 
+                              : ($appState.clickUpInstallPath ? 'Auto-detected' : 'Not found')}>
+                        {$appState.clickUpInstallPath || '-'}
+                    </span>
+                    <Button 
+                        id="open-clickup-btn" 
+                        variant="outline"
+                        size="sm"
+                        onclick={() => sendMessage('open-clickup-location')}>
+                        <ExternalLink class="size-4" />
+                        Open
+                    </Button>
+                    <Button 
+                        id="set-clickup-path-btn" 
+                        variant="outline"
+                        size="sm"
+                        onclick={handleSetClickUpPath}>
+                        <Settings class="size-4" />
+                        Set Path...
+                    </Button>
+                </div>
+                
+                <div class="flex items-center gap-3 py-3">
+                    <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+                        <Server class="size-4" />
+                        Debug Port
+                    </span>
+                    <Input 
+                        type="number"
+                        id="debug-port-input"
+                        bind:value={debugPort}
+                        oninput={handleDebugPortInput}
+                        min="1024" 
+                        max="65535" 
+                        class="w-24 text-center" />
+                    <Button 
+                        id="set-debug-port-btn" 
+                        variant="outline"
+                        size="sm"
+                        onclick={handleSetDebugPort}>
+                        <Check class="size-4" />
+                        Set
+                    </Button>
+                </div>
+                
+                <div class="flex items-center gap-3 py-3">
+                    <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
+                        <RefreshCw class="size-4" />
+                        Restart if Running
+                    </span>
+                    <Switch 
+                        id="restart-if-running-toggle"
+                        bind:checked={restartIfRunning}
+                        onclick={() => handleSetRestartIfRunning(restartIfRunning)} />
+                    <span class="text-xs text-muted-foreground">Kill existing ClickUp before launching debug mode</span>
+                </div>
             </div>
         </AccordionContent>
     </AccordionItem>

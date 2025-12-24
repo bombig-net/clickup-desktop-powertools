@@ -2,7 +2,10 @@
     import { onMount, onDestroy } from 'svelte';
     import { sendMessage, onMessage, offMessage } from '$lib/bridge';
     import { Button } from '$lib/components/ui/button';
-    import { getStatusColorClass } from '$lib/utils';
+    import { getStatusDotClass } from '$lib/utils';
+    import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+    import Compass from '@lucide/svelte/icons/compass';
+    import Server from '@lucide/svelte/icons/server';
 
     let connectionState = '-';
     let lastKnownUrl = '-';
@@ -11,10 +14,10 @@
     let clickUpStatus = '-';
     let recentNavigations: string[] = [];
 
-    function getConnectionStateClass(state: string): string {
-        if (state === 'Connected') return getStatusColorClass('valid');
-        if (state === 'Failed') return getStatusColorClass('invalid');
-        return getStatusColorClass('untested');
+    function getConnectionStateVariant(state: string): 'valid' | 'invalid' | 'untested' {
+        if (state === 'Connected') return 'valid';
+        if (state === 'Failed') return 'invalid';
+        return 'untested';
     }
 
     function getPortAvailableText(available: boolean | null): string {
@@ -23,10 +26,10 @@
         return 'Unknown';
     }
 
-    function getPortAvailableClass(available: boolean | null): string {
-        if (available === true) return getStatusColorClass('valid');
-        if (available === false) return getStatusColorClass('invalid');
-        return getStatusColorClass('untested');
+    function getPortAvailableVariant(available: boolean | null): 'valid' | 'invalid' | 'untested' {
+        if (available === true) return 'valid';
+        if (available === false) return 'invalid';
+        return 'untested';
     }
 
     function handleDebugInspectorState(payload: unknown): void {
@@ -63,16 +66,17 @@
     });
 </script>
 
-<div class="mt-4">
-    <div class="flex justify-between items-center py-2 border-b border-border">
+<div class="space-y-4">
+    <div class="flex justify-between items-center py-3">
         <span class="text-sm text-muted-foreground">Connection State</span>
         <span id="debug-connection-state" 
-              class="text-sm font-medium {getConnectionStateClass(connectionState)}">
+              class="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <span class={getStatusDotClass(getConnectionStateVariant(connectionState))}></span>
             {connectionState}
         </span>
     </div>
     
-    <div class="flex justify-between items-center py-2 border-b border-border">
+    <div class="flex justify-between items-center py-3">
         <span class="text-sm text-muted-foreground">Last Known URL</span>
         <span id="debug-last-url" 
               class="text-xs font-mono text-muted-foreground max-w-[200px] truncate">
@@ -80,44 +84,54 @@
         </span>
     </div>
     
-    <div class="flex justify-between items-center py-2 border-b border-border">
-        <span class="text-sm text-muted-foreground">Debug Port</span>
+    <div class="flex justify-between items-center py-3">
+        <span class="text-sm text-muted-foreground flex items-center gap-2">
+            <Server class="size-4" />
+            Debug Port
+        </span>
         <span id="debug-port" class="text-sm font-medium">{debugPort}</span>
     </div>
     
-    <div class="flex justify-between items-center py-2 border-b border-border">
+    <div class="flex justify-between items-center py-3">
         <span class="text-sm text-muted-foreground">Port Available</span>
         <span id="debug-port-available" 
-              class="text-sm font-medium {getPortAvailableClass(debugPortAvailable)}">
+              class="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <span class={getStatusDotClass(getPortAvailableVariant(debugPortAvailable))}></span>
             {getPortAvailableText(debugPortAvailable)}
         </span>
     </div>
     
-    <div class="flex justify-between items-center py-2 border-b border-border">
+    <div class="flex justify-between items-center py-3">
         <span class="text-sm text-muted-foreground">ClickUp Status</span>
         <span id="debug-clickup-status" class="text-sm font-medium">{clickUpStatus}</span>
     </div>
     
-    <div class="mt-4">
-        <div class="text-sm text-muted-foreground mb-2">Recent Navigations</div>
+    <div class="pt-2">
+        <div class="text-sm text-muted-foreground mb-3 flex items-center gap-2">
+            <Compass class="size-4" />
+            Recent Navigations
+        </div>
         <div id="debug-navigations" 
-             class="max-h-[200px] overflow-y-auto bg-muted rounded p-2">
+             class="max-h-[200px] overflow-y-auto bg-muted rounded p-3">
             {#if recentNavigations.length === 0}
                 <div class="text-xs text-muted-foreground">No navigation events yet</div>
             {:else}
-                {#each recentNavigations as nav}
-                    <div class="py-2 text-sm font-mono text-muted-foreground border-b border-border last:border-0">
-                        {nav}
-                    </div>
-                {/each}
+                <div class="space-y-2">
+                    {#each recentNavigations as nav}
+                        <div class="text-sm font-mono text-muted-foreground">
+                            {nav}
+                        </div>
+                    {/each}
+                </div>
             {/if}
         </div>
     </div>
     
     <Button 
         variant="outline"
-        class="mt-4"
+        class="mt-2"
         onclick={handleRefresh}>
+        <RefreshCw class="size-4" />
         Refresh
     </Button>
 </div>

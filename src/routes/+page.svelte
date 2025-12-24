@@ -71,21 +71,35 @@
     });
 </script>
 
-<div class="min-h-screen bg-background">
-    <div class="max-w-[600px] mx-auto px-8 py-8 min-h-screen flex flex-col">
-        <Header />
+<div class="bg-background relative z-10 flex min-h-svh flex-col">
+    <main class="flex flex-1 flex-col">
+        <section>
+            <div class="container-wrapper">
+                <div class="container flex flex-col items-center gap-2 py-8 text-center md:py-16 lg:py-20 xl:gap-4">
+                    <Header />
+                </div>
+            </div>
+        </section>
 
-        <main class="flex-1">
-            <ToolsList />
-            <ApiSettings />
-            <SystemSettings />
-            <Diagnostics />
-        </main>
+        <section>
+            <div class="container-wrapper">
+                <div class="container flex flex-col gap-6 py-8 md:py-12">
+                    <ToolsList />
+                    <ApiSettings />
+                    <SystemSettings />
+                    <Diagnostics />
+                </div>
+            </div>
+        </section>
+    </main>
 
-        <footer class="text-center py-6 border-t border-border mt-auto">
-            <p class="text-xs text-muted-foreground">PowerTools is experimental and intended for power users.</p>
-        </footer>
-    </div>
+    <footer class="text-center py-6 mt-auto">
+        <div class="container-wrapper">
+            <div class="container">
+                <p class="text-xs text-muted-foreground">PowerTools is experimental and intended for power users.</p>
+            </div>
+        </div>
+    </footer>
     
     <Toast message={toastMessage} type={toastType} show={showToast} />
 </div>
