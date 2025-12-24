@@ -4,9 +4,12 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using Microsoft.Extensions.Logging;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -16,6 +19,24 @@ namespace ClickUpDesktopPowerTools.UI.Control;
 
 public partial class ControlWindow : Window
 {
+    // P/Invoke declarations for removing system border
+    [DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_CLIENTEDGE = 0x0200;
+    private const int WS_EX_STATICEDGE = 0x20000;
+    private const uint SWP_NOMOVE = 0x0002;
+    private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOZORDER = 0x0004;
+    private const uint SWP_FRAMECHANGED = 0x0020;
+
     private readonly TokenStorage _tokenStorage;
     private readonly ClickUpApi _clickUpApi;
     private readonly CoreState _coreState;
@@ -31,9 +52,14 @@ public partial class ControlWindow : Window
     private bool _isInitialized = false;
     private bool _webViewFailed = false;
     private bool _hasAttemptedReload = false;
+    private DateTime _lastClickTime = DateTime.MinValue;
 
     public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, RuntimeBridge? runtimeBridge, ToolManager? toolManager, ILoggerFactory loggerFactory)
     {
+        // #region agent log
+        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:37", message = "Constructor entry", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+        // #endregion
+        
         _tokenStorage = tokenStorage;
         _clickUpApi = clickUpApi;
         _coreState = coreState;
@@ -45,8 +71,47 @@ public partial class ControlWindow : Window
         _logger = loggerFactory.CreateLogger<ControlWindow>();
         _toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
 
-        InitializeComponent();
+        // #region agent log
+        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:50", message = "Before InitializeComponent", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+        // #endregion
+        
+        try
+        {
+            InitializeComponent();
+            
+            // #region agent log
+            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:56", message = "After InitializeComponent", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+            // #endregion
+        }
+        catch (Exception ex)
+        {
+            // #region agent log
+            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:62", message = "InitializeComponent exception", data = new { exceptionType = ex.GetType().Name, message = ex.Message, stackTrace = ex.StackTrace }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+            // #endregion
+            throw;
+        }
+        
         Loaded += OnLoaded;
+        StateChanged += OnStateChanged;
+        SourceInitialized += OnSourceInitialized;
+        
+        // #region agent log
+        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:68", message = "Constructor exit", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+        // #endregion
+    }
+
+    private void OnSourceInitialized(object? sender, EventArgs e)
+    {
+        // Remove system border by modifying window extended style
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            // Remove WS_EX_CLIENTEDGE and WS_EX_STATICEDGE to remove borders
+            var extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+            extendedStyle &= ~(WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+            SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle);
+            SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        }
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -637,6 +702,168 @@ public partial class ControlWindow : Window
     {
         _allowClose = true;
         Close();
+    }
+
+    // Window Control Handlers
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        else
+        {
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_allowClose)
+        {
+            Hide();
+        }
+        else
+        {
+            ForceClose();
+        }
+    }
+
+    // Window Dragging
+    private void TitleBar_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == System.Windows.Input.MouseButton.Left)
+        {
+            // Detect double-click (within 300ms)
+            var now = DateTime.Now;
+            var timeSinceLastClick = (now - _lastClickTime).TotalMilliseconds;
+            _lastClickTime = now;
+
+            if (timeSinceLastClick < 300 && timeSinceLastClick > 0)
+            {
+                // Double-click detected - toggle maximize/restore
+                if (WindowState == WindowState.Maximized)
+                {
+                    WindowState = WindowState.Normal;
+                }
+                else
+                {
+                    WindowState = WindowState.Maximized;
+                }
+                return;
+            }
+
+            // Single click - start dragging
+            DragMove();
+        }
+    }
+
+    // Button hover handlers for icon color changes
+    private void MinimizeButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (MinimizeIcon != null)
+        {
+            MinimizeIcon.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#737373"));
+        }
+    }
+
+    private void MinimizeButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (MinimizeIcon != null)
+        {
+            MinimizeIcon.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a3a3a3"));
+        }
+    }
+
+    private void MaximizeButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (MaximizeIcon != null)
+        {
+            MaximizeIcon.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#737373"));
+        }
+    }
+
+    private void MaximizeButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (MaximizeIcon != null)
+        {
+            MaximizeIcon.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a3a3a3"));
+        }
+    }
+
+    private void CloseButton_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (CloseIcon != null)
+        {
+            CloseIcon.Stroke = Brushes.White;
+        }
+    }
+
+    private void CloseButton_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (CloseIcon != null)
+        {
+            CloseIcon.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a3a3a3"));
+        }
+    }
+
+    // Update maximize button icon when window state changes
+    private void OnStateChanged(object? sender, EventArgs e)
+    {
+        // #region agent log
+        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:707", message = "OnStateChanged entry", data = new { windowState = WindowState.ToString(), maximizeIconNull = MaximizeIcon == null }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+        // #endregion
+        
+        if (MaximizeIcon != null)
+        {
+            try
+            {
+                if (WindowState == WindowState.Maximized)
+                {
+                    // #region agent log
+                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:714", message = "Before Geometry.Parse restore", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+                    // #endregion
+                    
+                    // Restore icon (Minimize2 from Lucide)
+                    MaximizeIcon.Data = Geometry.Parse("M4 14h6m-6 0v6m0-6l6 6m10-8V6a2 2 0 0 0-2-2h-4m6 6v6a2 2 0 0 1-2 2h-4m-6 0H6a2 2 0 0 1-2-2v-4");
+                    
+                    // #region agent log
+                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:718", message = "After Geometry.Parse restore", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+                    // #endregion
+                }
+                else
+                {
+                    // #region agent log
+                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:723", message = "Before Geometry.Parse maximize", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+                    // #endregion
+                    
+                    // Maximize icon
+                    MaximizeIcon.Data = Geometry.Parse("M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3");
+                    
+                    // #region agent log
+                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:727", message = "After Geometry.Parse maximize", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+                    // #endregion
+                }
+            }
+            catch (Exception ex)
+            {
+                // #region agent log
+                try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:732", message = "Geometry.Parse exception", data = new { exceptionType = ex.GetType().Name, message = ex.Message, stackTrace = ex.StackTrace }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+                // #endregion
+                _logger?.LogError(ex, "Failed to update maximize icon");
+            }
+        }
+        else
+        {
+            // #region agent log
+            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "C", location = "ControlWindow.xaml.cs:738", message = "MaximizeIcon is null", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
+            // #endregion
+        }
     }
 }
 

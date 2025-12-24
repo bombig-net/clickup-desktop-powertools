@@ -5,29 +5,205 @@
         Title="ClickUp Desktop PowerTools"
         Width="800"
         Height="600"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        AllowsTransparency="False"
+        Background="#0a0a0a"
+        BorderThickness="0">
     <Grid>
-        <wv2:WebView2 x:Name="WebView" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         
-        <!-- Error overlay shown when WebView2 crashes -->
-        <Border x:Name="ErrorOverlay" 
-                Visibility="Collapsed" 
-                Background="#1a1a2e">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="⚠️" 
-                           FontSize="48" 
-                           HorizontalAlignment="Center" 
-                           Foreground="#e5e5e5"
-                           Margin="0,0,0,20"/>
-                <TextBlock x:Name="ErrorMessage" 
-                           Text="An error occurred." 
-                           FontSize="16" 
-                           Foreground="#e5e5e5" 
-                           TextAlignment="Center"
-                           TextWrapping="Wrap"
-                           MaxWidth="400"/>
-            </StackPanel>
-        </Border>
+        <!-- Custom Title Bar -->
+        <Grid Grid.Row="0" 
+              Background="#0a0a0a"
+              MouseDown="TitleBar_MouseDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Title Text -->
+                <TextBlock Grid.Column="0"
+                          Text="ClickUp Desktop PowerTools"
+                          Foreground="#e5e5e5"
+                          FontSize="14"
+                          FontWeight="Medium"
+                          VerticalAlignment="Center"
+                          Margin="16,0,0,0"/>
+                
+                <!-- Window Control Buttons -->
+                <StackPanel Grid.Column="1" 
+                           Orientation="Horizontal">
+                    <!-- Minimize Button -->
+                    <Button x:Name="MinimizeButton"
+                           Width="36"
+                           Height="36"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Click="MinimizeButton_Click"
+                           Cursor="Hand"
+                           Padding="0"
+                           Margin="0,0,2,0"
+                           MouseEnter="MinimizeButton_MouseEnter"
+                           MouseLeave="MinimizeButton_MouseLeave">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#1a1a1a"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Viewbox Width="16" Height="16" Stretch="Uniform">
+                            <Path x:Name="MinimizeIcon"
+                                  Data="M5 12h14"
+                                  Stroke="#a3a3a3"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"/>
+                        </Viewbox>
+                    </Button>
+                    
+                    <!-- Maximize/Restore Button -->
+                    <Button x:Name="MaximizeButton"
+                           Width="36"
+                           Height="36"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Click="MaximizeButton_Click"
+                           Cursor="Hand"
+                           Padding="0"
+                           Margin="0,0,2,0"
+                           MouseEnter="MaximizeButton_MouseEnter"
+                           MouseLeave="MaximizeButton_MouseLeave">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#1a1a1a"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Viewbox Width="16" Height="16" Stretch="Uniform">
+                            <Path x:Name="MaximizeIcon"
+                                  Data="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"
+                                  Stroke="#a3a3a3"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"/>
+                        </Viewbox>
+                    </Button>
+                    
+                    <!-- Close Button -->
+                    <Button x:Name="CloseButton"
+                           Width="36"
+                           Height="36"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Click="CloseButton_Click"
+                           Cursor="Hand"
+                           Padding="0"
+                           MouseEnter="CloseButton_MouseEnter"
+                           MouseLeave="CloseButton_MouseLeave">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#e81123"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Viewbox Width="16" Height="16" Stretch="Uniform">
+                            <Path x:Name="CloseIcon"
+                                  Data="M18 6L6 18M6 6l12 12"
+                                  Stroke="#a3a3a3"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"/>
+                        </Viewbox>
+                    </Button>
+                </StackPanel>
+            </Grid>
+            
+            <!-- Subtle Divider -->
+            <Border Height="1"
+                    Background="#262626"
+                    VerticalAlignment="Bottom"
+                    HorizontalAlignment="Stretch"/>
+        </Grid>
+        
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <wv2:WebView2 x:Name="WebView" />
+            
+            <!-- Error overlay shown when WebView2 crashes -->
+            <Border x:Name="ErrorOverlay" 
+                    Visibility="Collapsed" 
+                    Background="#1a1a2e">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="⚠️" 
+                               FontSize="48" 
+                               HorizontalAlignment="Center" 
+                               Foreground="#e5e5e5"
+                               Margin="0,0,0,20"/>
+                    <TextBlock x:Name="ErrorMessage" 
+                               Text="An error occurred." 
+                               FontSize="16" 
+                               Foreground="#e5e5e5" 
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               MaxWidth="400"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
 

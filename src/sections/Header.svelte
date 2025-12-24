@@ -78,7 +78,7 @@
             title={$appState.clickUpInstallPath ? 'Launch ClickUp with remote debugging enabled' : 'ClickUp Desktop not found'}
             class="mt-2">
         <Rocket class="size-4" />
-        Launch ClickUp Debug
+        Launch ClickUp in Debug Mode
     </Button>
 </header>
 
