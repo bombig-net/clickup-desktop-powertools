@@ -23,9 +23,9 @@
     $: uptimeBadge = getUptimeBadge($appState);
 </script>
 
-<header class="flex flex-col items-center gap-4">
-    <div class="flex flex-col items-center gap-2 mb-2">
-        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight gradient-text">
+<header class="flex flex-col items-center gap-3">
+    <div class="flex flex-col items-center gap-2 mb-1">
+        <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight gradient-text">
             ClickUp Desktop PowerTools
         </h1>
         <div class="flex gap-4 justify-center items-center text-sm text-muted-foreground text-balance">
@@ -38,7 +38,7 @@
         </div>
     </div>
     
-    <div class="flex gap-3 justify-center items-center flex-wrap">
+    <div class="flex gap-2 justify-center items-center flex-wrap">
         <Badge id="badge-clickup" 
                variant="outline"
                title={clickUpBadge.title}

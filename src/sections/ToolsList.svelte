@@ -51,7 +51,7 @@
 </script>
 
 <div id="tools-container">
-    <Accordion type="single" bind:value={accordionValue} class="space-y-6">
+    <Accordion type="single" bind:value={accordionValue} class="space-y-4">
         {#each $appState.tools || [] as tool (tool.id)}
             <AccordionItem value={tool.id} id="tool-{tool.id}" data-tool-id={tool.id}>
                 <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
@@ -62,7 +62,7 @@
                     {tool.name}
                 </AccordionTrigger>
                 <AccordionContent>
-                    <div class="space-y-6 pt-2">
+                    <div class="space-y-4 pt-1">
                         <p class="text-sm text-muted-foreground">{tool.description}</p>
                         
                         {#if tool.id === 'custom-css-js'}

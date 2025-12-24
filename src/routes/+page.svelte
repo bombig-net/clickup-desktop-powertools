@@ -75,7 +75,7 @@
     <main class="flex flex-1 flex-col">
         <section>
             <div class="container-wrapper">
-                <div class="container flex flex-col items-center gap-2 py-8 text-center md:py-16 lg:py-20 xl:gap-4">
+                <div class="container flex flex-col items-center gap-2 pb-6 pt-12 text-center md:py-8 lg:py-10 xl:gap-4">
                     <Header />
                 </div>
             </div>
@@ -83,7 +83,7 @@
 
         <section>
             <div class="container-wrapper">
-                <div class="container flex flex-col gap-6 py-8 md:py-12">
+                <div class="container flex flex-col gap-4 py-4 md:py-6">
                     <ToolsList />
                     <ApiSettings />
                     <SystemSettings />
@@ -93,7 +93,7 @@
         </section>
     </main>
 
-    <footer class="text-center py-6 mt-auto">
+    <footer class="text-center py-4 mt-auto">
         <div class="container-wrapper">
             <div class="container">
                 <p class="text-xs text-muted-foreground">PowerTools is experimental and intended for power users.</p>
