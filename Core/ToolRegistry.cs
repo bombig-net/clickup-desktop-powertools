@@ -11,9 +11,7 @@ public static class ToolRegistry
     public static readonly ToolInfo[] Tools = new[]
     {
         new ToolInfo("custom-css-js", "Custom CSS/JS",
-            "Apply custom styling and scripts to ClickUp Desktop"),
-        new ToolInfo("debug-inspector", "Debug & Inspector",
-            "Observe and validate Runtime Bridge connection state")
+            "Apply custom styling and scripts to ClickUp Desktop")
     };
 
     public record ToolInfo(string Id, string Name, string Description);

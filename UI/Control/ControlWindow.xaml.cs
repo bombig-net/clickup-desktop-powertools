@@ -282,10 +282,6 @@ public partial class ControlWindow : Window
                     HandleSetCustomCssJs(message["payload"]);
                     break;
 
-                case "get-debug-inspector-state":
-                    HandleGetDebugInspectorState();
-                    break;
-
                 default:
                     _logger.LogWarning("Unknown message type from WebUI: {Type}", messageType);
                     break;
@@ -509,29 +505,6 @@ public partial class ControlWindow : Window
         else
         {
             _logger.LogWarning("Custom CSS/JS tool not available");
-        }
-    }
-
-    private void HandleGetDebugInspectorState()
-    {
-        var tool = _toolManager?.GetToolInstance("debug-inspector") as Tools.DebugInspector.DebugInspectorTool;
-        if (tool != null)
-        {
-            var state = tool.GetState();
-            SendMessage("debug-inspector-state", state);
-        }
-        else
-        {
-            // Return empty state if tool not instantiated
-            SendMessage("debug-inspector-state", new Tools.DebugInspector.DebugInspectorState
-            {
-                ConnectionState = _coreState.RuntimeConnectionState.ToString(),
-                LastKnownUrl = _coreState.LastKnownUrl,
-                ClickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
-                DebugPortAvailable = _coreState.ClickUpDebugPortAvailable,
-                DebugPort = _systemIntegrationSettings.DebugPort,
-                RecentNavigations = new List<string>()
-            });
         }
     }
 

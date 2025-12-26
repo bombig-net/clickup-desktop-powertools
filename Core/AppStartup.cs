@@ -130,17 +130,6 @@ public class AppStartup
             return new Tools.CustomCssJs.CustomCssJsTool(toolLogger);
         });
 
-        // Register debug inspector tool
-        _toolManager.RegisterTool("debug-inspector", () =>
-        {
-            var toolLogger = _loggerFactory.CreateLogger<Tools.DebugInspector.DebugInspectorTool>();
-            return new Tools.DebugInspector.DebugInspectorTool(
-                toolLogger,
-                _runtimeBridge!,
-                _clickUpRuntime!,
-                _systemIntegrationSettings!);
-        });
-
         // Load tool activation and notify tool manager
         var toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
         foreach (var tool in ToolRegistry.Tools)
