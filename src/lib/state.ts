@@ -12,7 +12,6 @@ export interface AppState {
 	dotNetVersion: string;
 	webView2Version: string;
 	logFilePath: string;
-	uptime: string;
 	clickUpDesktopStatus: string;
 	clickUpDebugPortAvailable: boolean | null;
 	clickUpInstallPath: string | null;
@@ -29,7 +28,6 @@ const initialState: AppState = {
 	dotNetVersion: '',
 	webView2Version: '',
 	logFilePath: '',
-	uptime: '',
 	clickUpDesktopStatus: '',
 	clickUpDebugPortAvailable: null,
 	clickUpInstallPath: null,

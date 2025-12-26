@@ -510,19 +510,12 @@ public partial class ControlWindow : Window
 
     private void PushState()
     {
-        // Calculate uptime
-        var uptime = DateTime.Now - _coreState.StartTime;
-        var uptimeString = uptime.TotalHours >= 1
-            ? $"{(int)uptime.TotalHours}h {uptime.Minutes}m"
-            : $"{uptime.Minutes}m";
-
         var state = new
         {
             version = _coreState.Version,
             dotNetVersion = _coreState.DotNetVersion,
             webView2Version = _coreState.WebView2Version,
             logFilePath = _coreState.LogFilePath,
-            uptime = uptimeString,
             clickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
             clickUpDebugPortAvailable = _coreState.ClickUpDebugPortAvailable,
             clickUpInstallPath = _coreState.ClickUpInstallPath,

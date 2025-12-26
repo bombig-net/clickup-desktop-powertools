@@ -1,7 +1,7 @@
 <script lang="ts">
     import { appState } from '$lib/state';
     import { sendMessage } from '$lib/bridge';
-    import { getClickUpBadge, getUptimeBadge } from '$lib/status';
+    import { getClickUpBadge } from '$lib/status';
     import { Button } from '$lib/components/ui/button';
     import { Badge } from '$lib/components/ui/badge';
     import type { BadgeVariant as StatusBadgeVariant } from '$lib/status';
@@ -15,7 +15,6 @@
 
     // Reactive badge computations
     $: clickUpBadge = getClickUpBadge($appState);
-    $: uptimeBadge = getUptimeBadge($appState);
 </script>
 
 <header class="flex flex-col items-center gap-3">
@@ -35,13 +34,6 @@
                class="flex items-center gap-1.5">
             <span class={getStatusDotClass(clickUpBadge.variant)}></span>
             {clickUpBadge.text}
-        </Badge>
-        <Badge id="badge-uptime" 
-               variant="outline"
-               title={uptimeBadge.title}
-               class="flex items-center gap-1.5">
-            <span class={getStatusDotClass(uptimeBadge.variant)}></span>
-            {uptimeBadge.text}
         </Badge>
         <Button id="header-refresh-btn" 
                 variant="outline"

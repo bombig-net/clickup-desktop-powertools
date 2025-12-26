@@ -45,14 +45,6 @@ export function getClickUpBadge(state: AppState): BadgeInfo {
 	};
 }
 
-export function getUptimeBadge(state: AppState): BadgeInfo {
-	return {
-		text: `Uptime: ${state.uptime || '0m'}`,
-		variant: 'info',
-		title: `Application uptime: ${state.uptime || '0m'}`
-	};
-}
-
 export function getClickUpStatus(state: AppState): StatusInfo {
 	if (state.clickUpDesktopStatus === 'Running') {
 		if (state.clickUpDebugPortAvailable === true) {

@@ -11,7 +11,6 @@ public class CoreState
     public string DotNetVersion { get; init; } = Environment.Version.ToString();
     public string? WebView2Version { get; set; } // Set after WebView2 init
     public string LogFilePath { get; init; } = string.Empty;
-    public DateTime StartTime { get; init; } = DateTime.Now;
 
     // Runtime bridge status (mutable)
     public ClickUpDesktopStatus ClickUpDesktopStatus { get; set; } = ClickUpDesktopStatus.Unknown;
