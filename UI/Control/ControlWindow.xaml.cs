@@ -282,6 +282,10 @@ public partial class ControlWindow : Window
                     HandleSetCustomCssJs(message["payload"]);
                     break;
 
+                case "test-time-tracking-overlay":
+                    HandleTestTimeTrackingOverlay();
+                    break;
+
                 default:
                     _logger.LogWarning("Unknown message type from WebUI: {Type}", messageType);
                     break;
@@ -505,6 +509,27 @@ public partial class ControlWindow : Window
         else
         {
             _logger.LogWarning("Custom CSS/JS tool not available");
+        }
+    }
+
+    private void HandleTestTimeTrackingOverlay()
+    {
+        // Check if tool is enabled
+        if (!_toolActivation.Enabled.GetValueOrDefault("time-tracking", false))
+        {
+            _logger.LogWarning("Attempted to test Time Tracking overlay while tool is disabled");
+            return;
+        }
+
+        var tool = _toolManager?.GetToolInstance("time-tracking") as Tools.TimeTracking.TimeTrackingTool;
+        if (tool != null)
+        {
+            tool.ShowOverlayForTesting();
+            _logger.LogInformation("Time Tracking overlay test triggered");
+        }
+        else
+        {
+            _logger.LogWarning("Time Tracking tool not available");
         }
     }
 

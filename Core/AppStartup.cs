@@ -130,6 +130,13 @@ public class AppStartup
             return new Tools.CustomCssJs.CustomCssJsTool(toolLogger);
         });
 
+        // Register time tracking tool
+        _toolManager.RegisterTool("time-tracking", () =>
+        {
+            var toolLogger = _loggerFactory.CreateLogger<Tools.TimeTracking.TimeTrackingTool>();
+            return new Tools.TimeTracking.TimeTrackingTool(toolLogger);
+        });
+
         // Load tool activation and notify tool manager
         var toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
         foreach (var tool in ToolRegistry.Tools)

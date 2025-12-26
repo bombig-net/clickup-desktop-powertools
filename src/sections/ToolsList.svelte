@@ -2,10 +2,12 @@
     import { appState } from '$lib/state';
     import { sendMessage } from '$lib/bridge';
     import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
-    import CustomCssJsTool from '../sections/tools/CustomCssJsTool.svelte';
+    import CustomCssJsTool from './tools/CustomCssJsTool.svelte';
+    import TimeTrackingTool from './tools/TimeTrackingTool.svelte';
     import { Switch } from '$lib/components/ui/switch';
     import type { Tool } from '$lib/state';
     import FileCode from '@lucide/svelte/icons/file-code';
+    import Timer from '@lucide/svelte/icons/timer';
     import Power from '@lucide/svelte/icons/power';
 
     let accordionValue: string | undefined = undefined;
@@ -17,6 +19,7 @@
     // Get icon for tool based on tool ID
     function getToolIcon(toolId: string) {
         if (toolId === 'custom-css-js') return FileCode;
+        if (toolId === 'time-tracking') return Timer;
         return null;
     }
 </script>
@@ -38,6 +41,8 @@
                         
                         {#if tool.id === 'custom-css-js'}
                             <CustomCssJsTool {tool} />
+                        {:else if tool.id === 'time-tracking'}
+                            <TimeTrackingTool {tool} />
                         {:else}
                             <!-- Generic tool enable toggle -->
                             <div class="flex items-center gap-3 py-3">
