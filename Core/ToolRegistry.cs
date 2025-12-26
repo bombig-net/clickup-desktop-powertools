@@ -10,8 +10,6 @@ public static class ToolRegistry
 {
     public static readonly ToolInfo[] Tools = new[]
     {
-        new ToolInfo("time-tracking", "Time Tracking",
-            "Shows currently tracked task and elapsed time"),
         new ToolInfo("custom-css-js", "Custom CSS/JS",
             "Apply custom styling and scripts to ClickUp Desktop"),
         new ToolInfo("debug-inspector", "Debug & Inspector",

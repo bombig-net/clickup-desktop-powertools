@@ -45,35 +45,6 @@ export function getClickUpBadge(state: AppState): BadgeInfo {
 	};
 }
 
-export function getApiBadge(state: AppState): BadgeInfo {
-	if (!state.hasApiToken) {
-		return {
-			text: 'API: Not Set',
-			variant: 'none',
-			title: 'No ClickUp API token configured'
-		};
-	}
-	if (state.tokenValid === true) {
-		return {
-			text: 'API: Valid',
-			variant: 'valid',
-			title: 'ClickUp API token is valid'
-		};
-	}
-	if (state.tokenValid === false) {
-		return {
-			text: 'API: Invalid',
-			variant: 'invalid',
-			title: 'ClickUp API token is invalid'
-		};
-	}
-	return {
-		text: 'API: Untested',
-		variant: 'untested',
-		title: 'ClickUp API token is configured but not tested'
-	};
-}
-
 export function getUptimeBadge(state: AppState): BadgeInfo {
 	return {
 		text: `Uptime: ${state.uptime || '0m'}`,
@@ -106,29 +77,3 @@ export function getClickUpStatus(state: AppState): StatusInfo {
 		variant: 'none'
 	};
 }
-
-export function getTokenStatus(state: AppState): StatusInfo {
-	if (!state.hasApiToken) {
-		return {
-			text: 'Not configured',
-			variant: 'none'
-		};
-	}
-	if (state.tokenValid === null) {
-		return {
-			text: 'Configured (untested)',
-			variant: 'untested'
-		};
-	}
-	if (state.tokenValid === true) {
-		return {
-			text: 'Valid',
-			variant: 'valid'
-		};
-	}
-	return {
-		text: 'Invalid',
-		variant: 'invalid'
-	};
-}
-

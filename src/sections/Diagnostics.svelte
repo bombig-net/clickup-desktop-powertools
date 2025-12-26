@@ -13,9 +13,6 @@
 
     function handleRefreshRuntimeStatus(): void {
         sendMessage('refresh-runtime-status');
-        if ($appState.hasApiToken) {
-            sendMessage('test-api-token');
-        }
     }
 
     // Reactive status computation
@@ -96,4 +93,3 @@
         </AccordionContent>
     </AccordionItem>
 </Accordion>
-

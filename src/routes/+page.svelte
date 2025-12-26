@@ -4,7 +4,6 @@
     import { sendMessage, onMessage, offMessage, init } from '$lib/bridge';
     import Header from '../sections/Header.svelte';
     import ToolsList from '../sections/ToolsList.svelte';
-    import ApiSettings from '../sections/ApiSettings.svelte';
     import SystemSettings from '../sections/SystemSettings.svelte';
     import Diagnostics from '../sections/Diagnostics.svelte';
     import { Toast } from '$lib/components/ui/toast';
@@ -85,7 +84,6 @@
             <div class="container-wrapper">
                 <div class="container flex flex-col gap-4 py-4 md:py-6">
                     <ToolsList />
-                    <ApiSettings />
                     <SystemSettings />
                     <Diagnostics />
                 </div>

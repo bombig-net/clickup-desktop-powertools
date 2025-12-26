@@ -13,11 +13,6 @@ public class CoreState
     public string LogFilePath { get; init; } = string.Empty;
     public DateTime StartTime { get; init; } = DateTime.Now;
 
-    // API status (mutable)
-    public bool HasApiToken { get; set; }
-    // TokenValid is nullable: null = not tested, true = valid, false = invalid
-    public bool? TokenValid { get; set; }
-
     // Runtime bridge status (mutable)
     public ClickUpDesktopStatus ClickUpDesktopStatus { get; set; } = ClickUpDesktopStatus.Unknown;
     // Debug port availability: null = not checked, true = available, false = not available

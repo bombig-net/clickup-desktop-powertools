@@ -9,7 +9,6 @@
     import type { Tool } from '$lib/state';
     import FileCode from '@lucide/svelte/icons/file-code';
     import Bug from '@lucide/svelte/icons/bug';
-    import Clock from '@lucide/svelte/icons/clock';
     import Power from '@lucide/svelte/icons/power';
 
     let debugInspectorTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -45,7 +44,6 @@
     function getToolIcon(toolId: string) {
         if (toolId === 'custom-css-js') return FileCode;
         if (toolId === 'debug-inspector') return Bug;
-        if (toolId === 'time-tracking') return Clock;
         return null;
     }
 </script>

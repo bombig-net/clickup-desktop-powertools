@@ -37,8 +37,6 @@ public partial class ControlWindow : Window
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_FRAMECHANGED = 0x0020;
 
-    private readonly TokenStorage _tokenStorage;
-    private readonly ClickUpApi _clickUpApi;
     private readonly CoreState _coreState;
     private readonly ClickUpRuntime _clickUpRuntime;
     private readonly SystemIntegration _systemIntegration;
@@ -54,14 +52,8 @@ public partial class ControlWindow : Window
     private bool _hasAttemptedReload = false;
     private DateTime _lastClickTime = DateTime.MinValue;
 
-    public ControlWindow(TokenStorage tokenStorage, ClickUpApi clickUpApi, CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, RuntimeBridge? runtimeBridge, ToolManager? toolManager, ILoggerFactory loggerFactory)
+    public ControlWindow(CoreState coreState, ClickUpRuntime clickUpRuntime, SystemIntegration systemIntegration, SystemIntegrationSettings systemIntegrationSettings, RuntimeBridge? runtimeBridge, ToolManager? toolManager, ILoggerFactory loggerFactory)
     {
-        // #region agent log
-        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:37", message = "Constructor entry", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-        // #endregion
-        
-        _tokenStorage = tokenStorage;
-        _clickUpApi = clickUpApi;
         _coreState = coreState;
         _clickUpRuntime = clickUpRuntime;
         _systemIntegration = systemIntegration;
@@ -71,33 +63,11 @@ public partial class ControlWindow : Window
         _logger = loggerFactory.CreateLogger<ControlWindow>();
         _toolActivation = SettingsManager.Load<ToolActivationSettings>("ToolActivation");
 
-        // #region agent log
-        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:50", message = "Before InitializeComponent", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-        // #endregion
-        
-        try
-        {
-            InitializeComponent();
-            
-            // #region agent log
-            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:56", message = "After InitializeComponent", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-            // #endregion
-        }
-        catch (Exception ex)
-        {
-            // #region agent log
-            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:62", message = "InitializeComponent exception", data = new { exceptionType = ex.GetType().Name, message = ex.Message, stackTrace = ex.StackTrace }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-            // #endregion
-            throw;
-        }
+        InitializeComponent();
         
         Loaded += OnLoaded;
         StateChanged += OnStateChanged;
         SourceInitialized += OnSourceInitialized;
-        
-        // #region agent log
-        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "A", location = "ControlWindow.xaml.cs:68", message = "Constructor exit", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-        // #endregion
     }
 
     private void OnSourceInitialized(object? sender, EventArgs e)
@@ -264,18 +234,6 @@ public partial class ControlWindow : Window
                     PushState();
                     break;
 
-                case "set-api-token":
-                    HandleSetApiToken(message["payload"]);
-                    break;
-
-                case "clear-api-token":
-                    HandleClearApiToken();
-                    break;
-
-                case "test-api-token":
-                    _ = HandleTestApiTokenAsync();
-                    break;
-
                 case "set-tool-enabled":
                     HandleSetToolEnabled(message["payload"]);
                     break;
@@ -337,57 +295,6 @@ public partial class ControlWindow : Window
         {
             _logger.LogError(ex, "Error processing message from WebUI");
         }
-    }
-
-    private void HandleSetApiToken(JsonNode? payload)
-    {
-        var token = payload?["token"]?.GetValue<string>();
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            _logger.LogWarning("set-api-token received with empty token");
-            return;
-        }
-
-        _tokenStorage.StoreToken(token);
-        _coreState.HasApiToken = true;
-        _coreState.TokenValid = null; // Reset validation status
-        _logger.LogInformation("API token stored");
-        PushState();
-    }
-
-    private void HandleClearApiToken()
-    {
-        _tokenStorage.ClearToken();
-        _coreState.HasApiToken = false;
-        _coreState.TokenValid = null;
-        _logger.LogInformation("API token cleared");
-        PushState();
-    }
-
-    private async System.Threading.Tasks.Task HandleTestApiTokenAsync()
-    {
-        if (!_coreState.HasApiToken)
-        {
-            SendMessage("test-result", new { success = false, error = "No API token configured" });
-            return;
-        }
-
-        try
-        {
-            // Test the token by calling the /user endpoint
-            var result = await _clickUpApi.GetAsync<JsonNode>("/user");
-            _coreState.TokenValid = true;
-            _logger.LogInformation("API token validated successfully");
-            SendMessage("test-result", new { success = true, error = (string?)null });
-        }
-        catch (Exception ex)
-        {
-            _coreState.TokenValid = false;
-            _logger.LogWarning(ex, "API token validation failed");
-            SendMessage("test-result", new { success = false, error = ex.Message });
-        }
-
-        PushState();
     }
 
     private void HandleSetToolEnabled(JsonNode? payload)
@@ -645,8 +552,6 @@ public partial class ControlWindow : Window
             uptime = uptimeString,
             clickUpDesktopStatus = _coreState.ClickUpDesktopStatus.ToString(),
             clickUpDebugPortAvailable = _coreState.ClickUpDebugPortAvailable,
-            hasApiToken = _coreState.HasApiToken,
-            tokenValid = _coreState.TokenValid,
             clickUpInstallPath = _coreState.ClickUpInstallPath,
             clickUpInstallPathOverride = _systemIntegrationSettings.ClickUpInstallPathOverride,
             debugPort = _systemIntegrationSettings.DebugPort,
@@ -815,55 +720,25 @@ public partial class ControlWindow : Window
     // Update maximize button icon when window state changes
     private void OnStateChanged(object? sender, EventArgs e)
     {
-        // #region agent log
-        try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:707", message = "OnStateChanged entry", data = new { windowState = WindowState.ToString(), maximizeIconNull = MaximizeIcon == null }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-        // #endregion
-        
         if (MaximizeIcon != null)
         {
             try
             {
                 if (WindowState == WindowState.Maximized)
                 {
-                    // #region agent log
-                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:714", message = "Before Geometry.Parse restore", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-                    // #endregion
-                    
                     // Restore icon (Minimize2 from Lucide)
                     MaximizeIcon.Data = Geometry.Parse("M4 14h6m-6 0v6m0-6l6 6m10-8V6a2 2 0 0 0-2-2h-4m6 6v6a2 2 0 0 1-2 2h-4m-6 0H6a2 2 0 0 1-2-2v-4");
-                    
-                    // #region agent log
-                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:718", message = "After Geometry.Parse restore", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-                    // #endregion
                 }
                 else
                 {
-                    // #region agent log
-                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:723", message = "Before Geometry.Parse maximize", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-                    // #endregion
-                    
                     // Maximize icon
                     MaximizeIcon.Data = Geometry.Parse("M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3");
-                    
-                    // #region agent log
-                    try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:727", message = "After Geometry.Parse maximize", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-                    // #endregion
                 }
             }
             catch (Exception ex)
             {
-                // #region agent log
-                try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "ControlWindow.xaml.cs:732", message = "Geometry.Parse exception", data = new { exceptionType = ex.GetType().Name, message = ex.Message, stackTrace = ex.StackTrace }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-                // #endregion
                 _logger?.LogError(ex, "Failed to update maximize icon");
             }
         }
-        else
-        {
-            // #region agent log
-            try { System.IO.File.AppendAllText(@"c:\dev\clickup-desktop-powertools\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "C", location = "ControlWindow.xaml.cs:738", message = "MaximizeIcon is null", data = new { }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n"); } catch { }
-            // #endregion
-        }
     }
 }
-

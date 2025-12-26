@@ -15,8 +15,6 @@ export interface AppState {
 	uptime: string;
 	clickUpDesktopStatus: string;
 	clickUpDebugPortAvailable: boolean | null;
-	hasApiToken: boolean;
-	tokenValid: boolean | null;
 	clickUpInstallPath: string | null;
 	clickUpInstallPathOverride: string | null;
 	debugPort: number;
@@ -34,8 +32,6 @@ const initialState: AppState = {
 	uptime: '',
 	clickUpDesktopStatus: '',
 	clickUpDebugPortAvailable: null,
-	hasApiToken: false,
-	tokenValid: null,
 	clickUpInstallPath: null,
 	clickUpInstallPathOverride: null,
 	debugPort: 9222,
@@ -51,4 +47,3 @@ export const appState: Writable<AppState> = writable(initialState);
 export function updateState(newState: Partial<AppState> | Record<string, unknown>): void {
 	appState.set(newState as AppState);
 }
-

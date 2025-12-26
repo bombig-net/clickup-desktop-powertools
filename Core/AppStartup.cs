@@ -11,8 +11,6 @@ public class AppStartup
     private readonly ILogger<AppStartup> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private TrayHost? _trayHost;
-    private TokenStorage? _tokenStorage;
-    private ClickUpApi? _clickUpApi;
     private ClickUpRuntime? _clickUpRuntime;
     private RuntimeBridge? _runtimeBridge;
     private ToolManager? _toolManager;
@@ -30,11 +28,6 @@ public class AppStartup
     {
         _logger.LogInformation("Initializing ClickUp Desktop PowerTools");
 
-        // Create token storage and API
-        _tokenStorage = new TokenStorage();
-        var apiLogger = _loggerFactory.CreateLogger<ClickUpApi>();
-        _clickUpApi = new ClickUpApi(_tokenStorage, apiLogger);
-
         // Create runtime detection
         _clickUpRuntime = new ClickUpRuntime(_loggerFactory.CreateLogger<ClickUpRuntime>());
 
@@ -51,7 +44,6 @@ public class AppStartup
         // Create core state with runtime info
         _coreState = new CoreState
         {
-            HasApiToken = !string.IsNullOrEmpty(_tokenStorage.GetToken()),
             LogFilePath = logFilePath,
             ClickUpDesktopStatus = _clickUpRuntime.CheckStatus(),
             ClickUpInstallPath = _systemIntegration.ResolveClickUpInstallPath(_systemIntegrationSettings),
@@ -108,7 +100,7 @@ public class AppStartup
         RegisterTools();
 
         // Initialize tray host with dependencies (including runtime bridge and tool manager)
-        _trayHost = new TrayHost(_tokenStorage, _clickUpApi, _coreState, 
+        _trayHost = new TrayHost(_coreState, 
             _clickUpRuntime, _systemIntegration, _systemIntegrationSettings, 
             _runtimeBridge, _toolManager, _loggerFactory);
         _trayHost.Initialize();
@@ -130,15 +122,6 @@ public class AppStartup
     private void RegisterTools()
     {
         if (_toolManager == null) return;
-
-        // Register time-tracking tool
-        _toolManager.RegisterTool("time-tracking", () =>
-        {
-            var serviceLogger = _loggerFactory.CreateLogger<Tools.TimeTracking.TimeTrackingService>();
-            var service = new Tools.TimeTracking.TimeTrackingService(_clickUpApi!, serviceLogger);
-            var viewModel = new Tools.TimeTracking.TimeTrackingViewModel(service);
-            return viewModel;
-        });
 
         // Register custom CSS/JS tool
         _toolManager.RegisterTool("custom-css-js", () =>
