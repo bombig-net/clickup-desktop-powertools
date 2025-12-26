@@ -24,7 +24,7 @@
     <AccordionItem value="diagnostics">
         <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
             <Activity class="size-5" />
-            Status & Diagnostics
+            System Info
         </AccordionTrigger>
         <AccordionContent>
             <div class="space-y-6 pt-2">

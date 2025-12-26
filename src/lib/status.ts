@@ -20,22 +20,22 @@ export function getClickUpBadge(state: AppState): BadgeInfo {
 	if (state.clickUpDesktopStatus === 'Running') {
 		if (state.clickUpDebugPortAvailable === true) {
 			return {
-				text: 'Running (Debug Ready)',
+				text: 'Running (Connected)',
 				variant: 'valid',
-				title: 'ClickUp Desktop is running and debug port is available'
+				title: 'ClickUp Desktop is running and PowerTools connection is available'
 			};
 		}
 		if (state.clickUpDebugPortAvailable === false) {
 			return {
-				text: 'Running (No Debug)',
+				text: 'Running (Not Connected)',
 				variant: 'untested',
-				title: 'ClickUp Desktop is running but debug port is not available'
+				title: 'ClickUp Desktop is running but PowerTools connection is not available'
 			};
 		}
 		return {
 			text: 'Running (Unknown)',
 			variant: 'untested',
-			title: 'ClickUp Desktop is running, debug status not checked'
+			title: 'ClickUp Desktop is running, connection status not checked'
 		};
 	}
 	return {
@@ -49,13 +49,13 @@ export function getClickUpStatus(state: AppState): StatusInfo {
 	if (state.clickUpDesktopStatus === 'Running') {
 		if (state.clickUpDebugPortAvailable === true) {
 			return {
-				text: 'Running (Debug Ready)',
+				text: 'Running (Connected)',
 				variant: 'valid'
 			};
 		}
 		if (state.clickUpDebugPortAvailable === false) {
 			return {
-				text: 'Running (No Debug)',
+				text: 'Running (Not Connected)',
 				variant: 'untested'
 			};
 		}

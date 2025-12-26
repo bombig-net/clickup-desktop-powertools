@@ -59,11 +59,11 @@
     <AccordionItem value="system-settings">
         <AccordionTrigger class="text-lg font-semibold flex items-center gap-2">
             <Settings class="size-5" />
-            System & Integration
+            System Settings
         </AccordionTrigger>
         <AccordionContent>
             <div class="space-y-6 pt-2">
-                <p class="text-sm text-muted-foreground text-balance">Configure system integration settings and debug options.</p>
+                <p class="text-sm text-muted-foreground text-balance">Configure system integration settings and connection options.</p>
                 <div class="flex items-center gap-3 py-3">
                     <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
                         <Monitor class="size-4" />
@@ -109,7 +109,7 @@
                 <div class="flex items-center gap-3 py-3">
                     <span class="flex-1 text-sm text-muted-foreground flex items-center gap-2">
                         <Server class="size-4" />
-                        Debug Port
+                        Port
                     </span>
                     <Input 
                         type="number"
@@ -138,7 +138,7 @@
                         id="restart-if-running-toggle"
                         bind:checked={restartIfRunning}
                         onclick={() => handleSetRestartIfRunning(restartIfRunning)} />
-                    <span class="text-xs text-muted-foreground">Kill existing ClickUp before launching debug mode</span>
+                    <span class="text-xs text-muted-foreground">Kill existing ClickUp before launching with PowerTools</span>
                 </div>
             </div>
         </AccordionContent>

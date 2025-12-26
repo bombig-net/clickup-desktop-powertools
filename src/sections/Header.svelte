@@ -50,9 +50,9 @@
             size="lg"
             onclick={() => sendMessage('launch-clickup-debug')}
             disabled={!$appState.clickUpInstallPath}
-            title={$appState.clickUpInstallPath ? 'Launch ClickUp with remote debugging enabled' : 'ClickUp Desktop not found'}
+            title={$appState.clickUpInstallPath ? 'Launch ClickUp with PowerTools connection enabled' : 'ClickUp Desktop not found'}
             class="mt-2">
         <Rocket class="size-4" />
-        Launch ClickUp in Debug Mode
+        Launch ClickUp with PowerTools
     </Button>
 </header>
